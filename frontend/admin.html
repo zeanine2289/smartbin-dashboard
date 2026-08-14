@@ -14,7 +14,10 @@
 
     <div class="container">
 
+        <!-- ================= HEADER ================= -->
+
         <div class="header">
+
             <div>
                 <h1>⚙️ Admin Panel</h1>
                 <p>จัดการระบบ SmartBin</p>
@@ -23,10 +26,11 @@
             <a href="index.html" class="back-btn">
                 ← กลับหน้าหลัก
             </a>
+
         </div>
 
 
-        <!-- ตั้งราคา -->
+        <!-- ================= SET PRICE ================= -->
 
         <div class="card">
 
@@ -61,7 +65,7 @@
         </div>
 
 
-        <!-- Reset -->
+        <!-- ================= RESET ================= -->
 
         <div class="card warning-card">
 
@@ -74,7 +78,8 @@
                 <br>
 
                 <strong>
-                    ขวดเก่าที่ยังอยู่บนเครื่องชั่งจะไม่ถูกลบออกจากน้ำหนักจริง
+                    ขวดเก่าที่ยังอยู่บนเครื่องชั่ง
+                    จะไม่ถูกลบออกจากน้ำหนักจริง
                 </strong>
 
             </p>
@@ -86,7 +91,7 @@
         </div>
 
 
-        <!-- ลบประวัติ -->
+        <!-- ================= DELETE HISTORY ================= -->
 
         <div class="card danger-card">
 
@@ -111,7 +116,7 @@
         </div>
 
 
-        <!-- สถานะ -->
+        <!-- ================= STATUS ================= -->
 
         <div class="card">
 
@@ -132,96 +137,178 @@
     </div>
 
 
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
     <script>
-        const API = "http://localhost:3000";
+        // =====================================================
+        // RENDER BACKEND
+        // =====================================================
+
+        const API =
+            "https://smartbin-backend-hvht.onrender.com";
+
+
+        // =====================================================
+        // ELEMENTS
+        // =====================================================
+
+        const serverStatus =
+            document.getElementById("serverStatus");
+
+        const currentPrice =
+            document.getElementById("currentPrice");
+
+
+        // =====================================================
+        // LOAD CURRENT PRICE
+        // =====================================================
 
         async function loadCurrentPrice() {
 
             try {
 
-                const res = await fetch(
+                console.log(
+                    "🔄 กำลังเชื่อมต่อ Backend..."
+                );
+
+                console.log(
+                    "API:",
                     `${API}/api/data`
                 );
 
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
+
+                const response =
+                    await fetch(
+                        `${API}/api/data`
+                    );
+
+
+                console.log(
+                    "HTTP Status:",
+                    response.status
+                );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        `HTTP ${response.status}`
+                    );
+
                 }
 
-                const data = await res.json();
 
-                let price = data.pricePerKg;
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "✅ Backend Data:",
+                    data
+                );
+
+
+                // =================================================
+                // PRICE
+                // =================================================
+
+                let pricePerKg = 0;
+
 
                 if (
-                    price === undefined ||
-                    price === null
+                    data.pricePerKg !== undefined &&
+                    data.pricePerKg !== null
                 ) {
 
-                    if (
-                        data.weight &&
-                        Number(data.weight) > 0
-                    ) {
+                    pricePerKg =
+                        Number(data.pricePerKg);
 
-                        price =
-                            Number(data.price) /
-                            Number(data.weight);
+                } else if (
+                    data.petPrice !== undefined &&
+                    data.petPrice !== null
+                ) {
 
-                    } else {
+                    pricePerKg =
+                        Number(data.petPrice);
 
-                        price = 0;
+                } else if (
+                    data.weight &&
+                    Number(data.weight) > 0 &&
+                    data.price !== undefined
+                ) {
 
-                    }
+                    pricePerKg =
+                        Number(data.price) /
+                        Number(data.weight);
 
                 }
 
-                document.getElementById(
-                        "currentPrice"
-                    ).innerText =
-                    Number(price).toFixed(2);
 
-                document.getElementById(
-                        "serverStatus"
-                    ).innerText =
+                currentPrice.innerText =
+                    pricePerKg.toFixed(2);
+
+
+                // =================================================
+                // ONLINE
+                // =================================================
+
+                serverStatus.innerText =
                     "🟢 ออนไลน์";
 
-                document.getElementById(
-                        "serverStatus"
-                    ).className =
+                serverStatus.className =
                     "status online";
+
+
+                console.log(
+                    "🟢 Backend Online"
+                );
+
 
             } catch (error) {
 
                 console.error(
-                    "Backend Error:",
+                    "❌ Backend Error:",
                     error
                 );
 
-                document.getElementById(
-                        "serverStatus"
-                    ).innerText =
+
+                serverStatus.innerText =
                     "🔴 ออฟไลน์";
 
-                document.getElementById(
-                        "serverStatus"
-                    ).className =
+                serverStatus.className =
                     "status offline";
+
+
+                currentPrice.innerText =
+                    "-";
+
             }
+
         }
 
 
-        // ========================================
-        // ตั้งราคา
-        // ========================================
+        // =====================================================
+        // SET PRICE
+        // =====================================================
 
         async function setPrice() {
 
-            const price =
+            const input =
                 document.getElementById(
                     "priceInput"
-                ).value;
+                );
 
+
+            const price =
+                Number(input.value);
+
+
+            // ตรวจสอบราคา
 
             if (!price ||
-                Number(price) <= 0
+                price <= 0
             ) {
 
                 alert(
@@ -235,9 +322,16 @@
 
             try {
 
-                const res =
+                console.log(
+                    "💰 กำลังตั้งราคา:",
+                    price
+                );
+
+
+                const response =
                     await fetch(
                         `${API}/api/set-price`, {
+
                             method: "POST",
 
                             headers: {
@@ -245,19 +339,38 @@
                             },
 
                             body: JSON.stringify({
-                                price: Number(price)
+
+                                price: price
+
                             })
+
                         }
                     );
 
 
-                if (!res.ok) {
+                console.log(
+                    "Set price status:",
+                    response.status
+                );
+
+
+                if (!response.ok) {
 
                     throw new Error(
-                        "ไม่สามารถบันทึกราคาได้"
+                        `HTTP ${response.status}`
                     );
 
                 }
+
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "Set price response:",
+                    data
+                );
 
 
                 alert(
@@ -265,14 +378,25 @@
                 );
 
 
+                input.value = "";
+
+
+                // โหลดราคาใหม่
+
                 loadCurrentPrice();
+
 
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    "❌ Set price error:",
+                    error
+                );
+
 
                 alert(
-                    "❌ ไม่สามารถเชื่อมต่อ Backend"
+                    "❌ ไม่สามารถบันทึกราคาได้\n\n" +
+                    error.message
                 );
 
             }
@@ -280,9 +404,9 @@
         }
 
 
-        // ========================================
-        // RESET
-        // ========================================
+        // =====================================================
+        // RESET DATA
+        // =====================================================
 
         async function resetData() {
 
@@ -299,7 +423,12 @@
 
             try {
 
-                const res =
+                console.log(
+                    "🔄 กำลัง Reset..."
+                );
+
+
+                const response =
                     await fetch(
                         `${API}/api/reset`, {
                             method: "POST"
@@ -307,25 +436,50 @@
                     );
 
 
-                if (!res.ok) {
+                console.log(
+                    "Reset status:",
+                    response.status
+                );
+
+
+                if (!response.ok) {
 
                     throw new Error(
-                        "Reset ไม่สำเร็จ"
+                        `HTTP ${response.status}`
                     );
 
                 }
 
 
-                alert(
-                    "✅ ส่งคำสั่ง Reset แล้ว"
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "Reset response:",
+                    data
                 );
+
+
+                alert(
+                    "✅ Reset ระบบสำเร็จ"
+                );
+
+
+                loadCurrentPrice();
+
 
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    "❌ Reset error:",
+                    error
+                );
+
 
                 alert(
-                    "❌ ไม่สามารถ Reset ระบบได้"
+                    "❌ ไม่สามารถ Reset ระบบได้\n\n" +
+                    error.message
                 );
 
             }
@@ -333,9 +487,9 @@
         }
 
 
-        // ========================================
-        // ลบประวัติ
-        // ========================================
+        // =====================================================
+        // DELETE HISTORY
+        // =====================================================
 
         async function deleteHistory() {
 
@@ -352,21 +506,44 @@
 
             try {
 
-                const res =
+                console.log(
+                    "🗑️ กำลังลบประวัติ..."
+                );
+
+
+                const response =
                     await fetch(
                         `${API}/api/history`, {
+
                             method: "DELETE"
+
                         }
                     );
 
 
-                if (!res.ok) {
+                console.log(
+                    "Delete history status:",
+                    response.status
+                );
+
+
+                if (!response.ok) {
 
                     throw new Error(
-                        "ลบประวัติไม่สำเร็จ"
+                        `HTTP ${response.status}`
                     );
 
                 }
+
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "Delete response:",
+                    data
+                );
 
 
                 alert(
@@ -375,16 +552,25 @@
 
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    "❌ Delete history error:",
+                    error
+                );
+
 
                 alert(
-                    "❌ Backend ยังไม่มี API สำหรับลบประวัติ"
+                    "❌ ไม่สามารถลบประวัติได้\n\n" +
+                    error.message
                 );
 
             }
 
         }
 
+
+        // =====================================================
+        // START
+        // =====================================================
 
         loadCurrentPrice();
     </script>
