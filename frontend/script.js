@@ -1,16 +1,105 @@
 // ======================================================
 // SMARTBIN DASHBOARD
+// PC + MOBILE + GITHUB PAGES + RENDER
+// GOOGLE MAPS + GOOGLE PLACES
 // ======================================================
 
+
 // ======================================================
-// BACKEND API - RENDER
+// BACKEND
 // ======================================================
 
-const API_URL = "https://smartbin-backend-hvht.onrender.com/api";
+const API_URL =
+    "https://smartbin-backend-hvht.onrender.com/api";
+
+
+// ======================================================
+// GLOBAL
+// ======================================================
 
 let map = null;
 let markers = [];
 let userMarker = null;
+
+
+// ======================================================
+// GOOGLE MAPS CALLBACK
+// ======================================================
+// Google Maps จะเรียก function นี้จาก callback=initGoogleMap
+// ======================================================
+
+window.initGoogleMap = function() {
+
+    console.log("📍 Google Maps callback เริ่มทำงาน");
+
+    const mapElement =
+        document.getElementById("map");
+
+    if (!mapElement) {
+
+        console.error("❌ ไม่พบ #map");
+
+        return;
+    }
+
+
+    // ป้องกันสร้างแผนที่ซ้ำ
+
+    if (map) {
+
+        console.log("ℹ️ Google Maps ถูกสร้างแล้ว");
+
+        return;
+    }
+
+
+    const defaultLocation = {
+
+        lat: 13.7563,
+        lng: 100.5018
+
+    };
+
+
+    try {
+
+        map =
+            new google.maps.Map(
+
+                mapElement,
+
+                {
+
+                    center: defaultLocation,
+
+                    zoom: 13,
+
+                    mapTypeControl: true,
+
+                    streetViewControl: true,
+
+                    fullscreenControl: true
+
+                }
+
+            );
+
+
+        console.log(
+            "✅ Google Maps พร้อมใช้งาน"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "❌ Google Maps Error:",
+            error
+        );
+
+    }
+
+};
 
 
 // ======================================================
@@ -20,90 +109,125 @@ let userMarker = null;
 async function loadData() {
 
     const serverStatus =
-        document.getElementById("serverStatus");
+        document.getElementById(
+            "serverStatus"
+        );
+
 
     try {
 
         const response =
-            await fetch(`${API_URL}/data`);
+            await fetch(
+                `${API_URL}/data`
+            );
+
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
         }
+
 
         const data =
             await response.json();
 
-        console.log("✅ Backend data:", data);
+
+        console.log(
+            "✅ Backend data:",
+            data
+        );
 
 
-        // จำนวนขวด
+        // ==================================================
+        // COUNT
+        // ==================================================
+
         const count =
-            document.getElementById("count");
+            document.getElementById(
+                "count"
+            );
+
 
         if (count) {
 
             count.innerText =
-                data.count != null ?
-                data.count :
-                0;
+                Number(
+                    data.count || 0
+                );
 
         }
 
 
-        // น้ำหนัก
+        // ==================================================
+        // WEIGHT
+        // ==================================================
+
         const totalWeight =
-            document.getElementById("totalWeight");
+            document.getElementById(
+                "totalWeight"
+            );
+
 
         if (totalWeight) {
 
-            const weight =
-                data.weight != null ?
-                Number(data.weight) :
-                0;
-
             totalWeight.innerText =
-                weight.toFixed(2);
+                Number(
+                    data.weight || 0
+                ).toFixed(2);
 
         }
 
 
-        // ราคา
+        // ==================================================
+        // TOTAL PRICE
+        // ==================================================
+
         const totalValue =
-            document.getElementById("totalValue");
+            document.getElementById(
+                "totalValue"
+            );
+
 
         if (totalValue) {
 
-            const price =
-                data.price != null ?
-                Number(data.price) :
-                0;
-
             totalValue.innerText =
-                price.toFixed(2);
+                Number(
+                    data.price || 0
+                ).toFixed(2);
 
         }
 
 
-        // ราคาต่อกิโล
+        // ==================================================
+        // PRICE PER KG
+        // ==================================================
+
         const petPrice =
-            document.getElementById("petPrice");
+            document.getElementById(
+                "petPrice"
+            );
+
 
         if (petPrice) {
 
             let pricePerKg = 0;
 
-            if (data.petPrice != null) {
+
+            if (
+                data.pricePerKg !== undefined &&
+                data.pricePerKg !== null
+            ) {
 
                 pricePerKg =
-                    Number(data.petPrice);
-
-            } else if (data.pricePerKg != null) {
-
-                pricePerKg =
-                    Number(data.pricePerKg);
+                    Number(
+                        data.pricePerKg
+                    );
 
             }
+
 
             petPrice.innerText =
                 pricePerKg.toFixed(2);
@@ -111,7 +235,10 @@ async function loadData() {
         }
 
 
-        // Backend ONLINE
+        // ==================================================
+        // BACKEND ONLINE
+        // ==================================================
+
         if (serverStatus) {
 
             serverStatus.innerText =
@@ -122,12 +249,14 @@ async function loadData() {
 
         }
 
+
     } catch (error) {
 
         console.error(
-            "❌ Load data error:",
+            "❌ Backend Error:",
             error
         );
+
 
         if (serverStatus) {
 
@@ -153,21 +282,36 @@ async function loadHistory() {
     try {
 
         const response =
-            await fetch(`${API_URL}/history`);
+            await fetch(
+                `${API_URL}/history`
+            );
+
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
         }
+
 
         const data =
             await response.json();
 
+
         const container =
-            document.getElementById("history");
+            document.getElementById(
+                "history"
+            );
+
 
         if (!container) {
+
             return;
+
         }
+
 
         container.innerHTML = "";
 
@@ -177,201 +321,111 @@ async function loadHistory() {
         ) {
 
             container.innerHTML = `
+
                 <div class="empty-history">
+
                     ยังไม่มีประวัติการขาย
+
                 </div>
+
             `;
 
             return;
+
         }
 
 
         data
             .slice()
             .reverse()
-            .forEach(item => {
-
-                const card =
-                    document.createElement("div");
-
-                card.className =
-                    "history-card";
+            .forEach(
+                item => {
 
 
-                const weight =
-                    item.weight != null ?
-                    Number(item.weight) :
-                    0;
+                    const weight =
+                        Number(
+                            item.weight || 0
+                        );
 
 
-                const price =
-                    item.price != null ?
-                    Number(item.price) :
-                    0;
+                    const price =
+                        Number(
+                            item.price || 0
+                        );
 
 
-                let time = "";
-
-                if (item.time) {
-
-                    time =
-                        new Date(
-                            item.time
-                        ).toLocaleString("th-TH");
-
-                }
+                    let time = "";
 
 
-                card.innerHTML = `
+                    if (item.time) {
 
-                    <div>
+                        time =
+                            new Date(
+                                item.time
+                            ).toLocaleString(
+                                "th-TH"
+                            );
 
-                        📦
-                        ${weight.toFixed(2)}
-                        kg
-
-                        <br>
-
-                        <small>
-                            ${escapeHTML(time)}
-                        </small>
-
-                    </div>
-
-                    <div style="
-                        color:green;
-                        font-weight:bold;
-                    ">
-
-                        💰
-                        ${price.toFixed(2)}
-                        บาท
-
-                    </div>
-
-                `;
+                    }
 
 
-                container.appendChild(card);
-
-            });
-
-
-    } catch (error) {
-
-        console.error(
-            "❌ Load history error:",
-            error
-        );
-
-    }
-
-}
+                    const card =
+                        document.createElement(
+                            "div"
+                        );
 
 
-// ======================================================
-// GOOGLE MAP
-// ======================================================
-
-function initGoogleMap() {
-
-    console.log("🗺️ กำลังโหลด Google Maps...");
+                    card.className =
+                        "history-card";
 
 
-    const mapElement =
-        document.getElementById("map");
+                    card.innerHTML = `
+
+                        <div>
+
+                            📦
+                            ${weight.toFixed(2)}
+                            kg
+
+                            <br>
+
+                            <small>
+                                ${escapeHTML(time)}
+                            </small>
+
+                        </div>
 
 
-    if (!mapElement) {
+                        <div style="
+                            color:green;
+                            font-weight:bold;
+                        ">
 
-        console.error(
-            "❌ ไม่พบ element #map"
-        );
+                            💰
+                            ${price.toFixed(2)}
+                            บาท
 
-        return;
+                        </div>
 
-    }
-
-
-    // ถ้า Google Maps ยังไม่โหลด
-    if (
-        typeof google === "undefined" ||
-        !google.maps
-    ) {
-
-        console.warn(
-            "⚠️ Google Maps API ยังโหลดไม่เสร็จ"
-        );
-
-        return;
-
-    }
+                    `;
 
 
-    // ถ้าสร้าง Map แล้วไม่ต้องสร้างใหม่
-    if (map) {
-        return;
-    }
-
-
-    const defaultLocation = {
-
-        lat: 13.7563,
-
-        lng: 100.5018
-
-    };
-
-
-    try {
-
-        map =
-            new google.maps.Map(
-                mapElement, {
-
-                    center: defaultLocation,
-
-                    zoom: 13,
-
-                    mapTypeControl: true,
-
-                    streetViewControl: true,
-
-                    fullscreenControl: true
+                    container.appendChild(
+                        card
+                    );
 
                 }
             );
 
 
-        console.log(
-            "✅ Google Maps พร้อมใช้งาน"
-        );
-
-
     } catch (error) {
 
         console.error(
-            "❌ Google Maps error:",
+            "❌ History Error:",
             error
         );
 
     }
-
-}
-
-
-// ======================================================
-// GOOGLE MAP CALLBACK
-// ======================================================
-
-// ฟังก์ชันนี้จะถูกเรียกจาก Google Maps
-function googleMapsLoaded() {
-
-    console.log(
-        "✅ Google Maps API โหลดเสร็จแล้ว"
-    );
-
-    initGoogleMap();
 
 }
 
@@ -389,6 +443,7 @@ function clearMarkers() {
 
         }
     );
+
 
     markers = [];
 
@@ -420,15 +475,18 @@ function calculateDistance(
 
     const dLat =
         (lat2 - lat1) *
-        Math.PI / 180;
+        Math.PI /
+        180;
 
 
     const dLng =
         (lng2 - lng1) *
-        Math.PI / 180;
+        Math.PI /
+        180;
 
 
     const a =
+
         Math.sin(dLat / 2) *
         Math.sin(dLat / 2) +
 
@@ -512,11 +570,12 @@ function getUserLocation() {
     return new Promise(
         (resolve, reject) => {
 
+
             if (!navigator.geolocation) {
 
                 reject(
                     new Error(
-                        "อุปกรณ์นี้ไม่รองรับ GPS"
+                        "อุปกรณ์ไม่รองรับ GPS"
                     )
                 );
 
@@ -539,11 +598,13 @@ function getUserLocation() {
 
                 },
 
+
                 error => {
 
                     reject(error);
 
                 },
+
 
                 {
 
@@ -577,9 +638,10 @@ async function findNearby() {
 
     try {
 
-        // ==============================================
+
+        // ==================================================
         // CHECK GOOGLE MAPS
-        // ==============================================
+        // ==================================================
 
         if (
             typeof google === "undefined" ||
@@ -587,7 +649,7 @@ async function findNearby() {
         ) {
 
             throw new Error(
-                "Google Maps API ยังโหลดไม่เสร็จ"
+                "Google Maps ยังโหลดไม่เสร็จ"
             );
 
         }
@@ -595,7 +657,7 @@ async function findNearby() {
 
         if (!map) {
 
-            initGoogleMap();
+            window.initGoogleMap();
 
         }
 
@@ -609,9 +671,9 @@ async function findNearby() {
         }
 
 
-        // ==============================================
+        // ==================================================
         // LOADING
-        // ==============================================
+        // ==================================================
 
         if (list) {
 
@@ -628,9 +690,9 @@ async function findNearby() {
         }
 
 
-        // ==============================================
+        // ==================================================
         // GPS
-        // ==============================================
+        // ==================================================
 
         let position;
 
@@ -640,11 +702,10 @@ async function findNearby() {
             position =
                 await getUserLocation();
 
-        } catch (gpsError) {
+        } catch (error) {
 
             console.warn(
-                "⚠️ GPS ไม่พร้อม ใช้กรุงเทพแทน",
-                gpsError
+                "⚠️ GPS ใช้งานไม่ได้ ใช้กรุงเทพแทน"
             );
 
 
@@ -662,23 +723,28 @@ async function findNearby() {
         const userLat =
             position.lat;
 
+
         const userLng =
             position.lng;
 
 
         console.log(
-            "📍 User location:",
+            "📍 User:",
             userLat,
             userLng
         );
 
 
+        // ==================================================
+        // CLEAR MARKERS
+        // ==================================================
+
         clearMarkers();
 
 
-        // ==============================================
+        // ==================================================
         // USER MARKER
-        // ==============================================
+        // ==================================================
 
         userMarker =
             new google.maps.Marker({
@@ -693,16 +759,14 @@ async function findNearby() {
 
                 map: map,
 
-                title: "ตำแหน่งของคุณ",
-
-                icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                title: "ตำแหน่งของคุณ"
 
             });
 
 
-        // ==============================================
+        // ==================================================
         // CENTER MAP
-        // ==============================================
+        // ==================================================
 
         map.setCenter({
 
@@ -716,9 +780,9 @@ async function findNearby() {
         map.setZoom(14);
 
 
-        // ==============================================
+        // ==================================================
         // SEARCH KEYWORD
-        // ==============================================
+        // ==================================================
 
         const input =
             document.getElementById(
@@ -766,9 +830,9 @@ async function findNearby() {
         }
 
 
-        // ==============================================
+        // ==================================================
         // GOOGLE PLACES
-        // ==============================================
+        // ==================================================
 
         const placesLibrary =
             await google.maps.importLibrary(
@@ -789,9 +853,9 @@ async function findNearby() {
         }
 
 
-        // ==============================================
-        // SEARCH REQUEST
-        // ==============================================
+        // ==================================================
+        // SEARCH
+        // ==================================================
 
         const request = {
 
@@ -833,8 +897,8 @@ async function findNearby() {
 
 
         console.log(
-            "🔎 Places request:",
-            request
+            "🔎 Places:",
+            keyword
         );
 
 
@@ -847,18 +911,13 @@ async function findNearby() {
         const places =
             result &&
             result.places ?
-            result.places : [];
+            result.places :
+            [];
 
 
-        console.log(
-            "♻️ Places result:",
-            places
-        );
-
-
-        // ==============================================
+        // ==================================================
         // NO RESULT
-        // ==============================================
+        // ==================================================
 
         if (
             places.length === 0
@@ -874,25 +933,19 @@ async function findNearby() {
 
                         <br><br>
 
-                        ลองค้นหา:
+                        ลองค้นหา
 
                         <br>
 
-                        <b>
-                            ร้านรับซื้อของเก่า
-                        </b>
+                        ร้านรับซื้อของเก่า
 
                         <br>
 
-                        <b>
-                            รับซื้อขวดพลาสติก
-                        </b>
+                        รับซื้อขวดพลาสติก
 
                         <br>
 
-                        <b>
-                            ร้านรีไซเคิล
-                        </b>
+                        ร้านรีไซเคิล
 
                     </div>
 
@@ -905,9 +958,9 @@ async function findNearby() {
         }
 
 
-        // ==============================================
+        // ==================================================
         // PREPARE SHOPS
-        // ==============================================
+        // ==================================================
 
         const shops = [];
 
@@ -915,12 +968,16 @@ async function findNearby() {
         places.forEach(
             place => {
 
+
                 if (!place.location) {
+
                     return;
+
                 }
 
 
                 const lat =
+
                     typeof place.location.lat ===
                     "function"
 
@@ -932,6 +989,7 @@ async function findNearby() {
 
 
                 const lng =
+
                     typeof place.location.lng ===
                     "function"
 
@@ -956,7 +1014,9 @@ async function findNearby() {
                     "ร้านรับซื้อของเก่า";
 
 
-                if (place.displayName) {
+                if (
+                    place.displayName
+                ) {
 
                     if (
                         typeof place.displayName ===
@@ -979,11 +1039,13 @@ async function findNearby() {
 
 
                 const address =
-                    place.formattedAddress || "";
+                    place.formattedAddress ||
+                    "";
 
 
                 const phone =
-                    place.nationalPhoneNumber || "";
+                    place.nationalPhoneNumber ||
+                    "";
 
 
                 const distance =
@@ -1022,9 +1084,9 @@ async function findNearby() {
         );
 
 
-        // ==============================================
+        // ==================================================
         // SORT
-        // ==============================================
+        // ==================================================
 
         shops.sort(
             (a, b) =>
@@ -1037,6 +1099,10 @@ async function findNearby() {
             shops.slice(0, 20);
 
 
+        // ==================================================
+        // CLEAR LIST
+        // ==================================================
+
         if (list) {
 
             list.innerHTML = "";
@@ -1044,9 +1110,9 @@ async function findNearby() {
         }
 
 
-        // ==============================================
-        // MAP BOUNDS
-        // ==============================================
+        // ==================================================
+        // BOUNDS
+        // ==================================================
 
         const bounds =
             new google.maps.LatLngBounds();
@@ -1061,12 +1127,13 @@ async function findNearby() {
         });
 
 
-        // ==============================================
+        // ==================================================
         // CREATE MARKERS
-        // ==============================================
+        // ==================================================
 
         nearest.forEach(
                 shop => {
+
 
                     bounds.extend({
 
@@ -1098,11 +1165,20 @@ async function findNearby() {
                     markers.push(marker);
 
 
+                    // ==================================================
+                    // GOOGLE MAP URL
+                    // ==================================================
+
                     const directionUrl =
+
                         shop.place.googleMapsURI ||
 
                         `https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}`;
 
+
+                    // ==================================================
+                    // INFO WINDOW
+                    // ==================================================
 
                     const infoWindow =
                         new google.maps.InfoWindow({
@@ -1112,56 +1188,82 @@ async function findNearby() {
                             <div class="google-popup">
 
                                 <h3>
+
                                     ♻️
                                     ${escapeHTML(
                                         shop.name
                                     )}
+
                                 </h3>
+
 
                                 ${
                                     shop.address
                                         ? `
+
                                             <div>
+
                                                 📍
                                                 ${escapeHTML(
                                                     shop.address
                                                 )}
+
                                             </div>
+
                                         `
                                         : ""
                                 }
+
 
                                 ${
                                     shop.phone
                                         ? `
+
                                             <div>
+
                                                 ☎️
                                                 ${escapeHTML(
                                                     shop.phone
                                                 )}
+
                                             </div>
+
                                         `
                                         : ""
                                 }
 
+
                                 <br>
 
+
                                 <b>
+
                                     📏
                                     ${shop.distance.toFixed(2)}
                                     กม.
+
                                 </b>
+
 
                                 <br><br>
 
+
                                 <a
+
                                     href="${directionUrl}"
+
                                     target="_blank"
+
                                     rel="noopener noreferrer"
+
                                     class="direction-button"
+
                                 >
+
                                     🧭 เปิดใน Google Maps
+
                                 </a>
+
 
                             </div>
 
@@ -1170,18 +1272,19 @@ async function findNearby() {
                     });
 
 
+                // ==================================================
                 // MARKER CLICK
+                // ==================================================
+
                 marker.addListener(
                     "click",
                     () => {
 
                         infoWindow.open({
 
-                            anchor:
-                                marker,
+                            anchor: marker,
 
-                            map:
-                                map
+                            map: map
 
                         });
 
@@ -1189,12 +1292,14 @@ async function findNearby() {
                 );
 
 
-                // ==========================================
+                // ==================================================
                 // SHOP CARD
-                // ==========================================
+                // ==================================================
 
                 if (!list) {
+
                     return;
+
                 }
 
 
@@ -1219,9 +1324,11 @@ async function findNearby() {
 
                     </div>
 
+
                     ${
                         shop.address
                             ? `
+
                                 <div class="shop-address">
 
                                     📍
@@ -1230,13 +1337,16 @@ async function findNearby() {
                                     )}
 
                                 </div>
+
                             `
                             : ""
                     }
 
+
                     ${
                         shop.phone
                             ? `
+
                                 <div class="shop-phone">
 
                                     ☎️
@@ -1245,9 +1355,11 @@ async function findNearby() {
                                     )}
 
                                 </div>
+
                             `
                             : ""
                     }
+
 
                     <div class="shop-distance">
 
@@ -1256,6 +1368,7 @@ async function findNearby() {
                         กม. จากคุณ
 
                     </div>
+
 
                     <a
 
@@ -1280,10 +1393,9 @@ async function findNearby() {
                     "click",
                     event => {
 
+
                         if (
-                            event.target.closest(
-                                "a"
-                            )
+                            event.target.closest("a")
                         ) {
 
                             return;
@@ -1293,11 +1405,9 @@ async function findNearby() {
 
                         map.setCenter({
 
-                            lat:
-                                shop.lat,
+                            lat: shop.lat,
 
-                            lng:
-                                shop.lng
+                            lng: shop.lng
 
                         });
 
@@ -1325,9 +1435,9 @@ async function findNearby() {
         );
 
 
-        // ==============================================
-        // FIT MAP
-        // ==============================================
+        // ==================================================
+        // FIT BOUNDS
+        // ==================================================
 
         if (
             nearest.length > 0
@@ -1339,17 +1449,13 @@ async function findNearby() {
 
                 {
 
-                    top:
-                        50,
+                    top: 50,
 
-                    right:
-                        50,
+                    right: 50,
 
-                    bottom:
-                        50,
+                    bottom: 50,
 
-                    left:
-                        50
+                    left: 50
 
                 }
 
@@ -1359,11 +1465,12 @@ async function findNearby() {
 
 
         console.log(
-            `✅ Found ${nearest.length} shops`
+            `✅ พบ ${nearest.length} ร้าน`
         );
 
 
     } catch (error) {
+
 
         console.error(
             "❌ Search error:",
@@ -1413,44 +1520,6 @@ function searchShops() {
 
 
 // ======================================================
-// ENTER KEY
-// ======================================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
-
-        const input =
-            document.getElementById(
-                "searchInput"
-            );
-
-
-        if (input) {
-
-            input.addEventListener(
-                "keydown",
-                function(event) {
-
-                    if (
-                        event.key ===
-                        "Enter"
-                    ) {
-
-                        findNearby();
-
-                    }
-
-                }
-            );
-
-        }
-
-    }
-);
-
-
-// ======================================================
 // OPEN LID
 // ======================================================
 
@@ -1463,7 +1532,9 @@ async function openLid() {
 
 
     if (!status) {
+
         return;
+
     }
 
 
@@ -1475,13 +1546,15 @@ async function openLid() {
 
         const response =
             await fetch(
+
                 `${API_URL}/trigger-lid`,
+
                 {
 
-                    method:
-                        "POST"
+                    method: "POST"
 
                 }
+
             );
 
 
@@ -1528,40 +1601,79 @@ async function openLid() {
 
 
 // ======================================================
+// ENTER SEARCH
+// ======================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+
+        const input =
+            document.getElementById(
+                "searchInput"
+            );
+
+
+        if (input) {
+
+            input.addEventListener(
+                "keydown",
+                event => {
+
+
+                    if (
+                        event.key ===
+                        "Enter"
+                    ) {
+
+                        findNearby();
+
+                    }
+
+                }
+            );
+
+        }
+
+    }
+);
+
+
+// ======================================================
 // START DASHBOARD
 // ======================================================
 
 document.addEventListener(
     "DOMContentLoaded",
-    function() {
+    () => {
+
 
         console.log(
-            "🚀 SmartBin Dashboard เริ่มทำงาน"
+            "🚀 SmartBin Dashboard Started"
         );
 
 
         // Backend
+
         loadData();
 
         loadHistory();
 
 
-        // Google Maps
-        initGoogleMap();
+        // Update backend
 
-
-        // อัปเดตข้อมูลทุก 3 วินาที
         setInterval(
             loadData,
             3000
         );
 
 
-        // อัปเดตประวัติทุก 5 วินาที
         setInterval(
             loadHistory,
             5000
         );
+
 
     }
 );
