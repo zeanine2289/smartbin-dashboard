@@ -1,0 +1,342 @@
+/* 🌈 Reset */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+
+/* 🌍 Body */
+
+body {
+    background: #f4f7fb;
+    color: #333;
+}
+
+
+/* 🔝 Header */
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background: linear-gradient(135deg, #00c9a7, #00a8ff);
+    color: white;
+}
+
+.app-header h1 {
+    font-size: 20px;
+}
+
+
+/* 📦 Container */
+
+.container {
+    padding: 20px;
+}
+
+
+/* 🧱 Cards Layout */
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+
+/* 🧾 Card */
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+
+/* 🏷 Label */
+
+.label {
+    font-size: 14px;
+    color: #777;
+    margin-bottom: 10px;
+}
+
+
+/* 🔢 Value */
+
+.value {
+    font-size: 26px;
+    font-weight: bold;
+    color: #00a8ff;
+}
+
+
+/* 🔘 Button */
+
+button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    background: #00a8ff;
+    color: white;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #0077cc;
+}
+
+
+/* 🔢 Input */
+
+input {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-top: 10px;
+    margin-right: 10px;
+}
+
+
+/* 📊 History */
+
+#history {
+    list-style: none;
+    margin-top: 10px;
+}
+
+#history li {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.shop-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    padding: 10px;
+}
+
+.shop-card {
+    background: #ffffff;
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.shop-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.shop-name {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.shop-rating {
+    color: #f39c12;
+    font-size: 14px;
+}
+
+.shop-address {
+    font-size: 13px;
+    color: #666;
+}
+
+
+/* 🗺 Map */
+
+#map {
+    height: 400px;
+}
+
+
+/* 📱 Responsive */
+
+@media (max-width: 600px) {
+    .app-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .value {
+        font-size: 22px;
+    }
+}
+
+
+/* 🔴 ปุ่ม Admin */
+
+.admin-btn {
+    background: #47f3ff;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+.admin-btn:hover {
+    background: #47f3ff;
+}
+
+.shop-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    padding: 10px;
+}
+
+.shop-card {
+    background: #ffffff;
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.shop-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.shop-name {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.shop-rating {
+    color: #f39c12;
+    font-size: 14px;
+}
+
+.shop-address {
+    font-size: 13px;
+    color: #666;
+}
+
+
+/* ================= MAP ================= */
+
+
+/* ================= MAP ================= */
+
+.map-card {
+    margin-top: 20px;
+}
+
+#map {
+    width: 100%;
+    height: 450px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+
+/* ================= SEARCH ================= */
+
+.map-search {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.map-search input {
+    flex: 1;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    outline: none;
+}
+
+.map-search input:focus {
+    border-color: #22c55e;
+}
+
+.map-search button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #16a34a;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.map-search button:hover {
+    background: #15803d;
+}
+
+
+/* ================= SHOP LIST ================= */
+
+.shop-list {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.shop-card {
+    padding: 15px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    background: white;
+    transition: 0.2s;
+}
+
+.shop-card:hover {
+    background: #f0fdf4;
+    transform: translateY(-2px);
+}
+
+.shop-name {
+    font-size: 17px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.shop-address {
+    color: #666;
+    font-size: 14px;
+}
+
+.shop-distance {
+    color: #16a34a;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+
+/* มือถือ */
+
+@media (max-width: 600px) {
+    .map-search {
+        flex-direction: column;
+    }
+    .map-search button {
+        width: 100%;
+    }
+    #map {
+        height: 350px;
+    }
+}

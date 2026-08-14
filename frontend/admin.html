@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Panel - SmartBin</title>
+
+    <link rel="stylesheet" href="./admin.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="header">
+            <div>
+                <h1>⚙️ Admin Panel</h1>
+                <p>จัดการระบบ SmartBin</p>
+            </div>
+
+            <a href="index.html" class="back-btn">
+                ← กลับหน้าหลัก
+            </a>
+        </div>
+
+
+        <!-- ตั้งราคา -->
+
+        <div class="card">
+
+            <h2>💰 ตั้งราคาขวดพลาสติก</h2>
+
+            <p class="description">
+                กำหนดราคาที่ระบบจะใช้คำนวณเงินจากน้ำหนักขวด
+            </p>
+
+            <div class="price-box">
+
+                <input type="number" id="priceInput" placeholder="เช่น 12" min="0" step="0.01">
+
+                <span>บาท / กก.</span>
+
+            </div>
+
+            <button class="primary-btn" onclick="setPrice()">
+                💾 บันทึกราคา
+            </button>
+
+            <div class="current-price">
+
+                ราคาปัจจุบัน
+
+                <strong>
+                    <span id="currentPrice">-</span>
+                </strong> บาท/กก.
+
+            </div>
+
+        </div>
+
+
+        <!-- Reset -->
+
+        <div class="card warning-card">
+
+            <h2>🔄 รีเซ็ตระบบ</h2>
+
+            <p class="description">
+
+                รีเซ็ตจำนวนขวดและน้ำหนักของระบบ
+
+                <br>
+
+                <strong>
+                    ขวดเก่าที่ยังอยู่บนเครื่องชั่งจะไม่ถูกลบออกจากน้ำหนักจริง
+                </strong>
+
+            </p>
+
+            <button class="warning-btn" onclick="resetData()">
+                🔄 Reset ระบบ
+            </button>
+
+        </div>
+
+
+        <!-- ลบประวัติ -->
+
+        <div class="card danger-card">
+
+            <h2>🗑️ ลบประวัติการขาย</h2>
+
+            <p class="description">
+
+                ลบข้อมูลประวัติการรับขวดทั้งหมดจากระบบ
+
+                <br>
+
+                <strong>
+                    การดำเนินการนี้ไม่สามารถย้อนกลับได้
+                </strong>
+
+            </p>
+
+            <button class="danger-btn" onclick="deleteHistory()">
+                🗑️ ลบประวัติทั้งหมด
+            </button>
+
+        </div>
+
+
+        <!-- สถานะ -->
+
+        <div class="card">
+
+            <h2>📡 สถานะระบบ</h2>
+
+            <div class="status-row">
+
+                <span>Backend</span>
+
+                <span id="serverStatus" class="status offline">
+                    กำลังตรวจสอบ...
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+        const API = "http://localhost:3000";
+
+        async function loadCurrentPrice() {
+
+            try {
+
+                const res = await fetch(
+                    `${API}/api/data`
+                );
+
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+
+                const data = await res.json();
+
+                let price = data.pricePerKg;
+
+                if (
+                    price === undefined ||
+                    price === null
+                ) {
+
+                    if (
+                        data.weight &&
+                        Number(data.weight) > 0
+                    ) {
+
+                        price =
+                            Number(data.price) /
+                            Number(data.weight);
+
+                    } else {
+
+                        price = 0;
+
+                    }
+
+                }
+
+                document.getElementById(
+                        "currentPrice"
+                    ).innerText =
+                    Number(price).toFixed(2);
+
+                document.getElementById(
+                        "serverStatus"
+                    ).innerText =
+                    "🟢 ออนไลน์";
+
+                document.getElementById(
+                        "serverStatus"
+                    ).className =
+                    "status online";
+
+            } catch (error) {
+
+                console.error(
+                    "Backend Error:",
+                    error
+                );
+
+                document.getElementById(
+                        "serverStatus"
+                    ).innerText =
+                    "🔴 ออฟไลน์";
+
+                document.getElementById(
+                        "serverStatus"
+                    ).className =
+                    "status offline";
+            }
+        }
+
+
+        // ========================================
+        // ตั้งราคา
+        // ========================================
+
+        async function setPrice() {
+
+            const price =
+                document.getElementById(
+                    "priceInput"
+                ).value;
+
+
+            if (!price ||
+                Number(price) <= 0
+            ) {
+
+                alert(
+                    "กรุณาใส่ราคาที่ถูกต้อง"
+                );
+
+                return;
+
+            }
+
+
+            try {
+
+                const res =
+                    await fetch(
+                        `${API}/api/set-price`, {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                price: Number(price)
+                            })
+                        }
+                    );
+
+
+                if (!res.ok) {
+
+                    throw new Error(
+                        "ไม่สามารถบันทึกราคาได้"
+                    );
+
+                }
+
+
+                alert(
+                    "✅ บันทึกราคาสำเร็จ"
+                );
+
+
+                loadCurrentPrice();
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    "❌ ไม่สามารถเชื่อมต่อ Backend"
+                );
+
+            }
+
+        }
+
+
+        // ========================================
+        // RESET
+        // ========================================
+
+        async function resetData() {
+
+            const confirmReset =
+                confirm(
+                    "⚠️ ต้องการ Reset ระบบใช่หรือไม่?"
+                );
+
+
+            if (!confirmReset) {
+                return;
+            }
+
+
+            try {
+
+                const res =
+                    await fetch(
+                        `${API}/api/reset`, {
+                            method: "POST"
+                        }
+                    );
+
+
+                if (!res.ok) {
+
+                    throw new Error(
+                        "Reset ไม่สำเร็จ"
+                    );
+
+                }
+
+
+                alert(
+                    "✅ ส่งคำสั่ง Reset แล้ว"
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    "❌ ไม่สามารถ Reset ระบบได้"
+                );
+
+            }
+
+        }
+
+
+        // ========================================
+        // ลบประวัติ
+        // ========================================
+
+        async function deleteHistory() {
+
+            const confirmDelete =
+                confirm(
+                    "⚠️ ต้องการลบประวัติการขายทั้งหมดหรือไม่?"
+                );
+
+
+            if (!confirmDelete) {
+                return;
+            }
+
+
+            try {
+
+                const res =
+                    await fetch(
+                        `${API}/api/history`, {
+                            method: "DELETE"
+                        }
+                    );
+
+
+                if (!res.ok) {
+
+                    throw new Error(
+                        "ลบประวัติไม่สำเร็จ"
+                    );
+
+                }
+
+
+                alert(
+                    "🗑️ ลบประวัติทั้งหมดแล้ว"
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    "❌ Backend ยังไม่มี API สำหรับลบประวัติ"
+                );
+
+            }
+
+        }
+
+
+        loadCurrentPrice();
+    </script>
+
+</body>
+
+</html>
