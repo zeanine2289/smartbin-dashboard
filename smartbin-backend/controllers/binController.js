@@ -1,115 +1,340 @@
-'use strict';
+const fs = require("fs");
+const path = require("path");
+const axios = require("axios");
 
-const data = require('../data/store');
+const data = require("../data/store");
 
-const fs = require('fs');
-const axios = require('axios');
+// ======================================================
+// PRICE FILE
+// ======================================================
 
-// ========================================
-// RESET COMMAND
-// ========================================
+const priceFile = path.join(
+    __dirname,
+    "..",
+    "price.json"
+);
 
-let resetCommand = false;
-
-// ========================================
+// ======================================================
 // LID COMMAND
-// ========================================
+// ======================================================
 
 let openCommand = false;
 
+// ======================================================
+// SAVE PRICE
+// ======================================================
 
-// ========================================
+function savePrice() {
+
+    try {
+
+        fs.writeFileSync(
+            priceFile,
+            JSON.stringify({
+                    pricePerKg: data.pricePerKg
+                },
+                null,
+                4
+            )
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Save price error:",
+            error.message
+        );
+
+    }
+
+}
+
+// ======================================================
+// LOAD PRICE
+// ======================================================
+
+function loadPrice() {
+
+    try {
+
+        if (!fs.existsSync(priceFile)) {
+
+            savePrice();
+
+            return;
+        }
+
+        const priceData =
+            JSON.parse(
+                fs.readFileSync(
+                    priceFile,
+                    "utf8"
+                )
+            );
+
+        if (
+            priceData.pricePerKg !== undefined &&
+            !isNaN(priceData.pricePerKg)
+        ) {
+
+            data.pricePerKg =
+                Number(priceData.pricePerKg);
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "❌ Load price error:",
+            error.message
+        );
+
+    }
+
+}
+
+loadPrice();
+
+// ======================================================
 // RECEIVE DATA FROM ESP32
-// ========================================
+// ======================================================
+//
+// ESP32 ส่งน้ำหนักเป็น "กรัม"
+//
+// ตัวอย่าง:
+//
+// {
+//     "weight": 0.56,
+//     "isBottle": true
+// }
+//
+// 0.56 = 0.56 กรัม
+//
+// Backend จะ:
+// 1. เพิ่มจำนวนขวด +1
+// 2. เพิ่มน้ำหนักรวม
+// 3. คำนวณราคา
+// 4. บันทึก History
+//
+// ======================================================
 
 exports.receiveData = (req, res) => {
 
-    const {
-        weight,
-        isBottle,
-        count,
-        totalWeight
-    } = req.body;
+    try {
 
-    console.log('');
-    console.log('================================');
-    console.log('📥 DATA FROM ESP32');
-    console.log('================================');
+        const weight =
+            Number(req.body.weight);
 
-    console.log('Weight:', weight);
-    console.log('Count:', count);
-    console.log('Total Weight:', totalWeight);
-    console.log('Is Bottle:', isBottle);
+        const isBottle =
+            req.body.isBottle === true ||
+            req.body.isBottle === 1 ||
+            req.body.isBottle === "true";
 
-    // ========================================
-    // รับเฉพาะข้อมูลที่เป็นขวด
-    // ========================================
+        console.log("");
+        console.log(
+            "======================================"
+        );
 
-    if (isBottle) {
+        console.log(
+            "📥 ESP32 RECYCLE DATA"
+        );
 
-        const bottleWeight = Number(weight) || 0;
+        console.log(
+            "Weight:",
+            weight,
+            "g"
+        );
 
-        // ------------------------------------
-        // สำคัญ
-        //
-        // ESP32 เป็นตัวตรวจว่าขวดใหม่จริง
-        // Backend ไม่เพิ่ม count ซ้ำเอง
-        // ------------------------------------
+        console.log(
+            "Bottle:",
+            isBottle
+        );
 
-        if (typeof count === 'number') {
-            data.bottleCount = count;
+        console.log(
+            "======================================"
+        );
+
+        // ==================================================
+        // ตรวจข้อมูล
+        // ==================================================
+
+        if (!isBottle ||
+            !isFinite(weight) ||
+            weight <= 0
+        ) {
+
+            console.log(
+                "⚠️ Invalid recycle data - ignored"
+            );
+
+            return res.json({
+
+                success: false,
+
+                message: "Invalid recycle data",
+
+                count: data.bottleCount,
+
+                totalWeight: data.totalWeight,
+
+                totalValue:
+                    (
+                        (data.totalWeight / 1000) *
+                        data.pricePerKg
+                    ),
+
+                pricePerKg: data.pricePerKg
+
+            });
+
         }
 
-        if (typeof totalWeight === 'number') {
-            data.totalWeight = totalWeight;
-        }
+        // ==================================================
+        // เพิ่มจำนวนขวด
+        // ==================================================
 
-        // ------------------------------------
-        // บันทึกประวัติ
-        // ------------------------------------
+        data.bottleCount += 1;
+
+        // ==================================================
+        // เพิ่มน้ำหนักรวม
+        // ==================================================
+
+        data.totalWeight += weight;
+
+        // ==================================================
+        // แปลงกรัม -> กิโลกรัมเพื่อคำนวณราคา
+        // ==================================================
+
+        const weightKg =
+            weight / 1000;
+
+        const transactionPrice =
+            weightKg *
+            data.pricePerKg;
+
+        // ==================================================
+        // HISTORY
+        // ==================================================
 
         data.transactions.push({
 
-            weight: bottleWeight,
+            weight: weight,
 
-            price: bottleWeight *
-                data.pricePerKg,
+            price: transactionPrice,
 
             time: new Date()
+
         });
 
-        console.log('🍾 New bottle received');
+        // ==================================================
+        // LOG
+        // ==================================================
 
         console.log(
-            'Bottle Count:',
+            "🍾 Bottle added: +1"
+        );
+
+        console.log(
+            "📦 Bottle Count:",
             data.bottleCount
         );
 
         console.log(
-            'Total Weight:',
-            data.totalWeight
+            "⚖️ Current Bottle:",
+            weight.toFixed(2),
+            "g"
         );
+
+        console.log(
+            "⚖️ Total Weight:",
+            data.totalWeight.toFixed(2),
+            "g"
+        );
+
+        console.log(
+            "⚖️ Total Weight:",
+            (
+                data.totalWeight / 1000
+            ).toFixed(4),
+            "kg"
+        );
+
+        console.log(
+            "💰 Current Price:",
+            transactionPrice.toFixed(4),
+            "THB"
+        );
+
+        console.log(
+            "💰 Total Value:",
+            (
+                (data.totalWeight / 1000) *
+                data.pricePerKg
+            ).toFixed(4),
+            "THB"
+        );
+
+        // ==================================================
+        // RESPONSE
+        // ==================================================
+
+        return res.json({
+
+            success: true,
+
+            message: "Recycle data received",
+
+            // จำนวนขวด
+            count: data.bottleCount,
+
+            // น้ำหนักรวม "กรัม"
+            totalWeight: data.totalWeight,
+
+            // น้ำหนักขวดล่าสุด "กรัม"
+            lastWeight: weight,
+
+            // น้ำหนักรวม "กิโลกรัม"
+            totalWeightKg: data.totalWeight / 1000,
+
+            // ราคาขวดล่าสุด
+            lastPrice: transactionPrice,
+
+            // เงินรวม
+            totalValue:
+                (
+                    (data.totalWeight / 1000) *
+                    data.pricePerKg
+                ),
+
+            // ราคาต่อ kg
+            pricePerKg: data.pricePerKg
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "❌ receiveData error:",
+            error
+        );
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: "Receive data failed",
+
+            error: error.message
+
+        });
+
     }
 
-    console.log('================================');
-    console.log('');
-
-    res.json({
-        success: true,
-
-        count: data.bottleCount,
-
-        weight: data.totalWeight,
-
-        price: data.totalWeight *
-            data.pricePerKg
-    });
 };
 
-
-// ========================================
-// GET DATA
-// ========================================
+// ======================================================
+// GET DASHBOARD DATA
+// ======================================================
 
 exports.getData = (req, res) => {
 
@@ -117,216 +342,171 @@ exports.getData = (req, res) => {
 
         count: data.bottleCount,
 
+        // น้ำหนักรวมเป็นกรัม
         weight: data.totalWeight,
 
-        price: data.totalWeight *
-            data.pricePerKg,
+        // น้ำหนักรวมเป็น kg
+        weightKg: data.totalWeight / 1000,
 
+        // เงินรวม
+        price:
+            (
+                (data.totalWeight / 1000) *
+                data.pricePerKg
+            ),
+
+        // ราคาต่อ kg
         pricePerKg: data.pricePerKg
+
     });
+
 };
 
-
-// ========================================
-// RESET FROM WEB
-// ========================================
+// ======================================================
+// RESET
+// ======================================================
 
 exports.reset = (req, res) => {
 
-    console.log('');
-    console.log('================================');
-    console.log('🔄 RESET REQUEST FROM WEB');
-    console.log('================================');
-
-    // ------------------------------------
-    // Reset ข้อมูลบนเว็บ
-    // ------------------------------------
+    data.bottleCount = 0;
 
     data.totalWeight = 0;
 
-    data.bottleCount = 0;
+    data.transactions = [];
 
-    // ------------------------------------
-    // ส่งคำสั่งไป ESP32
-    // ------------------------------------
-
-    resetCommand = true;
-
-    console.log('Reset command = TRUE');
-
-    console.log('================================');
+    console.log(
+        "🔄 Dashboard data reset"
+    );
 
     res.json({
 
         success: true,
 
-        message: 'Reset command sent to ESP32',
-
-        reset: true
-    });
-};
-
-
-// ========================================
-// ESP32 CHECK RESET
-// ========================================
-
-exports.checkReset = (req, res) => {
-
-    if (resetCommand) {
-
-        console.log(
-            '📡 ESP32 received RESET command'
-        );
-
-        // สำคัญมาก
-        // อ่านแล้วปิดคำสั่งทันที
-
-        resetCommand = false;
-
-        return res.json({
-
-            reset: true
-
-        });
-    }
-
-    res.json({
-
-        reset: false
+        message: "Reset success"
 
     });
+
 };
 
-
-// ========================================
+// ======================================================
 // SET PRICE
-// ========================================
+// ======================================================
 
 exports.setPrice = (req, res) => {
 
-    const {
-        price
-    } = req.body;
+    const price =
+        Number(req.body.price);
 
-    if (
-        price === undefined ||
-        price === null ||
-        isNaN(price)
+    if (!isFinite(price) ||
+        price <= 0
     ) {
 
         return res.status(400).json({
 
             success: false,
 
-            message: 'Invalid price'
+            message: "Invalid price"
 
         });
+
     }
 
     data.pricePerKg =
-        Number(price);
+        price;
+
+    savePrice();
 
     console.log(
-        '💰 New price:',
-        data.pricePerKg,
-        'THB/kg'
+        "💰 Price updated:",
+        price,
+        "THB/kg"
     );
 
     res.json({
 
         success: true,
 
-        message: 'Price updated',
+        message: "Price updated",
 
         newPrice: data.pricePerKg
 
     });
+
 };
 
-
-// ========================================
-// GET PET PRICE
-// ========================================
+// ======================================================
+// GET PRICE
+// ======================================================
 
 exports.getPetPrice = (req, res) => {
 
-    try {
+    res.json({
 
-        const petPrice =
-            require('../price.json');
+        pricePerKg: data.pricePerKg
 
-        res.json(petPrice);
+    });
 
-    } catch (error) {
-
-        res.status(500).json({
-
-            success: false,
-
-            message: 'Cannot read price.json'
-
-        });
-    }
 };
 
-
-// ========================================
+// ======================================================
 // CONTROL LID
-// ========================================
+// ======================================================
 
 exports.controlLid = (req, res) => {
 
-    const {
-        action
-    } = req.body;
+    const action =
+        req.body.action;
 
-    console.log(
-        'Lid action:',
-        action
-    );
-
-    if (action === 'open') {
+    if (action === "open") {
 
         openCommand = true;
 
+    } else if (action === "close") {
+
+        openCommand = false;
+
     }
+
+    console.log(
+        "🚪 Lid action:",
+        action
+    );
 
     res.json({
 
         success: true,
 
-        message: `Lid ${action}`
+        action: action
 
     });
+
 };
 
-
-// ========================================
+// ======================================================
 // TRIGGER LID
-// ========================================
+// ======================================================
 
 exports.triggerLid = (req, res) => {
 
     openCommand = true;
 
     console.log(
-        '🚪 Lid triggered'
+        "🚪 OPEN LID COMMAND"
     );
 
     res.json({
 
         success: true,
 
-        message: 'Lid triggered'
+        message: "Lid triggered"
 
     });
+
 };
 
-
-// ========================================
+// ======================================================
 // ESP32 CHECK LID
-// ========================================
+// ======================================================
 
 exports.checkLid = (req, res) => {
 
@@ -334,140 +514,249 @@ exports.checkLid = (req, res) => {
 
         openCommand = false;
 
+        console.log(
+            "📡 ESP32 received OPEN command"
+        );
+
         return res.json({
 
-            action: 'open'
+            action: "open"
 
         });
+
     }
 
     res.json({
 
-        action: 'none'
+        action: "none"
 
     });
+
 };
 
-
-// ========================================
-// UPLOAD IMAGE
-// ========================================
+// ======================================================
+// UPLOAD IMAGE -> YOLO
+// ======================================================
 
 exports.uploadImage = async(req, res) => {
 
-    const chunks = [];
+    try {
 
-    req.on('data', chunk => {
+        const chunks = [];
 
-        chunks.push(chunk);
+        req.on(
+            "data",
+            chunk => {
 
-    });
-
-    req.on('end', async() => {
-
-        const buffer =
-            Buffer.concat(chunks);
-
-        // ------------------------------------
-        // Save image
-        // ------------------------------------
-
-        try {
-
-            fs.writeFileSync(
-                'image.jpg',
-                buffer
-            );
-
-            console.log(
-                '📸 Image saved'
-            );
-
-        } catch (error) {
-
-            console.error(
-                'Image save error:',
-                error.message
-            );
-        }
-
-
-        // ------------------------------------
-        // YOLO
-        // ------------------------------------
-
-        try {
-
-            const yoloRes =
-                await axios.post(
-
-                    'http://192.168.1.10:8000/detect',
-
-                    buffer,
-
-                    {
-                        headers: {
-
-                            'Content-Type': 'application/octet-stream',
-
-                            'x-api-key': 'mysecret1235'
-
-                        }
-                    }
-                );
-
-
-            console.log(
-                'YOLO RESULT:',
-                yoloRes.data
-            );
-
-
-            const isBottle =
-                yoloRes.data.label ===
-                'bottle';
-
-
-            if (isBottle) {
-
-                openCommand = true;
+                chunks.push(chunk);
 
             }
+        );
 
+        req.on(
+            "end",
+            async() => {
 
-            res.json({
+                try {
 
-                success: true,
+                    const buffer =
+                        Buffer.concat(chunks);
 
-                isBottle
+                    console.log("");
+                    console.log(
+                        "======================================"
+                    );
 
-            });
+                    console.log(
+                        "📸 Image received:",
+                        buffer.length,
+                        "bytes"
+                    );
 
+                    console.log(
+                        "======================================"
+                    );
 
-        } catch (error) {
+                    // ==================================================
+                    // SAVE IMAGE
+                    // ==================================================
 
-            console.error(
-                'YOLO ERROR:',
-                error.message
-            );
+                    const imagePath =
+                        path.join(
+                            __dirname,
+                            "..",
+                            "image.jpg"
+                        );
 
-            res.status(500).json({
+                    fs.writeFileSync(
+                        imagePath,
+                        buffer
+                    );
 
-                success: false,
+                    console.log(
+                        "💾 image.jpg saved"
+                    );
 
-                error: 'YOLO failed'
+                    // ==================================================
+                    // SEND TO YOLO
+                    // ==================================================
 
-            });
+                    console.log(
+                        "🤖 Sending image to YOLO..."
+                    );
 
-        }
+                    const yoloRes =
+                        await axios.post(
 
-    });
+                            "http://192.168.1.166:8000/detect",
+
+                            buffer,
+
+                            {
+
+                                headers: {
+
+                                    "Content-Type": "application/octet-stream"
+
+                                },
+
+                                timeout: 15000
+
+                            }
+
+                        );
+
+                    console.log(
+                        "🤖 YOLO RESPONSE:"
+                    );
+
+                    console.log(
+                        JSON.stringify(
+                            yoloRes.data
+                        )
+                    );
+
+                    // ==================================================
+                    // YOLO RESULT
+                    // ==================================================
+
+                    const detected =
+                        yoloRes.data &&
+                        yoloRes.data.detected === true;
+
+                    const yoloCount =
+                        Number(
+                            yoloRes.data &&
+                            yoloRes.data.count ?
+                            yoloRes.data.count :
+                            0
+                        );
+
+                    const bottles =
+                        yoloRes.data &&
+                        Array.isArray(
+                            yoloRes.data.bottles
+                        ) ?
+                        yoloRes.data.bottles :
+                        [];
+
+                    // ==================================================
+                    // DETECTED
+                    // ==================================================
+
+                    if (detected) {
+
+                        openCommand = true;
+
+                        console.log("");
+                        console.log(
+                            "🍾 BOTTLE DETECTED!"
+                        );
+
+                        console.log(
+                            "YOLO detected:",
+                            yoloCount,
+                            "object(s)"
+                        );
+
+                        console.log(
+                            "🚪 Lid command sent"
+                        );
+
+                    } else {
+
+                        console.log("");
+
+                        console.log(
+                            "❌ NO BOTTLE DETECTED"
+                        );
+
+                    }
+
+                    // ==================================================
+                    // RESPONSE
+                    // ==================================================
+
+                    return res.json({
+
+                        success: true,
+
+                        detected: detected,
+
+                        count: yoloCount,
+
+                        bottles: bottles,
+
+                        action: detected ?
+                            "open" :
+                            "none"
+
+                    });
+
+                } catch (error) {
+
+                    console.error(
+                        "❌ YOLO ERROR:",
+                        error.message
+                    );
+
+                    return res.status(500).json({
+
+                        success: false,
+
+                        error: "YOLO failed",
+
+                        message: error.message
+
+                    });
+
+                }
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ uploadImage error:",
+            error
+        );
+
+        return res.status(500).json({
+
+            success: false,
+
+            error: "Upload failed"
+
+        });
+
+    }
+
 };
 
-
-// ========================================
-// HISTORY
-// ========================================
+// ======================================================
+// GET HISTORY
+// ======================================================
 
 exports.getHistory = (req, res) => {
 
@@ -477,42 +766,24 @@ exports.getHistory = (req, res) => {
 
 };
 
-
-// ========================================
+// ======================================================
 // DELETE HISTORY
-// ========================================
+// ======================================================
 
 exports.deleteHistory = (req, res) => {
 
-    try {
+    data.transactions = [];
 
-        data.transactions = [];
+    console.log(
+        "🗑️ History deleted"
+    );
 
-        console.log('🗑️ History deleted');
+    res.json({
 
-        res.json({
+        success: true,
 
-            success: true,
+        message: "History deleted"
 
-            message: 'ลบประวัติทั้งหมดแล้ว'
-
-        });
-
-    } catch (error) {
-
-        console.error(
-            'Delete history error:',
-            error
-        );
-
-        res.status(500).json({
-
-            success: false,
-
-            message: 'ลบประวัติไม่สำเร็จ'
-
-        });
-
-    }
+    });
 
 };
