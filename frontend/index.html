@@ -9,12 +9,9 @@
 
     <title>SmartBin Dashboard</title>
 
-    <!-- SmartBin CSS -->
     <link rel="stylesheet" href="./sty.css">
 
     <style>
-        /* ================= MAP ================= */
-        
         #map {
             width: 100%;
             height: 450px;
@@ -27,7 +24,6 @@
         .map-card {
             margin-top: 20px;
         }
-        /* ================= SEARCH ================= */
         
         .map-search {
             display: flex;
@@ -51,7 +47,6 @@
             cursor: pointer;
             font-size: 15px;
         }
-        /* ================= SHOP LIST ================= */
         
         .shop-list {
             margin-top: 15px;
@@ -63,12 +58,12 @@
             border-radius: 10px;
             border: 1px solid #ddd;
             cursor: pointer;
-            transition: 0.2s;
+            transition: .2s;
         }
         
         .shop-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
         }
         
         .shop-name {
@@ -101,7 +96,6 @@
             border-radius: 7px;
             text-decoration: none;
         }
-        /* ================= GOOGLE MAP INFO ================= */
         
         .google-popup {
             min-width: 220px;
@@ -121,15 +115,16 @@
             text-decoration: none;
             margin-top: 10px;
         }
+        
+        .status-online {
+            color: green;
+            font-weight: 600;
+        }
     </style>
 
 </head>
 
-
 <body>
-
-
-    <!-- ================= HEADER ================= -->
 
     <header class="app-header">
 
@@ -145,23 +140,21 @@
 
         </div>
 
-
         <div class="header-buttons">
 
             <button onclick="loadData()" class="refresh-btn">
 
-                🔄 รีเฟรช
+            🔄 รีเฟรช
 
-            </button>
-
+        </button>
 
             <a href="admin.html">
 
                 <button class="admin-btn">
 
-                    ⚙️ Admin
+                ⚙️ Admin
 
-                </button>
+            </button>
 
             </a>
 
@@ -169,26 +162,17 @@
 
     </header>
 
-
-
-    <!-- ================= MAIN ================= -->
-
     <main class="container">
 
-
-        <!-- ================= DASHBOARD ================= -->
+        <!-- DASHBOARD -->
 
         <section class="cards">
-
 
             <div class="card">
 
                 <div class="label">
-
                     🍾 จำนวนขวด
-
                 </div>
-
 
                 <div id="count" class="value">
 
@@ -196,25 +180,17 @@
 
                 </div>
 
-
                 <div class="unit">
-
                     ขวด
-
                 </div>
 
             </div>
 
-
-
             <div class="card">
 
                 <div class="label">
-
                     ⚖️ น้ำหนักรวม
-
                 </div>
-
 
                 <div id="totalWeight" class="value">
 
@@ -222,25 +198,17 @@
 
                 </div>
 
-
                 <div class="unit">
-
                     กิโลกรัม
-
                 </div>
 
             </div>
 
-
-
             <div class="card">
 
                 <div class="label">
-
                     💰 มูลค่ารวม
-
                 </div>
-
 
                 <div id="totalValue" class="value">
 
@@ -248,50 +216,35 @@
 
                 </div>
 
-
                 <div class="unit">
-
                     บาท
-
                 </div>
 
             </div>
-
-
 
             <div class="card">
 
                 <div class="label">
-
                     💵 ราคาขวด PET
-
                 </div>
-
 
                 <div id="petPrice" class="value">
 
-                    0
+                    0.00
 
                 </div>
 
-
                 <div class="unit">
-
                     บาท / กก.
-
                 </div>
 
             </div>
 
-
         </section>
 
-
-
-        <!-- ================= HISTORY ================= -->
+        <!-- HISTORY -->
 
         <section class="card history-card">
-
 
             <div class="section-header">
 
@@ -309,7 +262,6 @@
 
             </div>
 
-
             <div id="history" class="history-container">
 
                 <div class="empty-history">
@@ -320,15 +272,11 @@
 
             </div>
 
-
         </section>
 
-
-
-        <!-- ================= GOOGLE MAP ================= -->
+        <!-- GOOGLE MAP -->
 
         <section class="card map-card">
-
 
             <div class="section-header">
 
@@ -346,32 +294,19 @@
 
             </div>
 
-
-
-            <!-- SEARCH -->
-
             <div class="map-search">
 
                 <input type="text" id="searchInput" placeholder="🔍 เช่น ร้านรับซื้อของเก่า">
 
-
                 <button onclick="findNearby()">
 
-                    🔍 ค้นหา
+                🔍 ค้นหา
 
-                </button>
+            </button>
 
             </div>
 
-
-
-            <!-- MAP -->
-
             <div id="map"></div>
-
-
-
-            <!-- SHOP LIST -->
 
             <div id="shopList" class="shop-list">
 
@@ -383,58 +318,51 @@
 
             </div>
 
-
         </section>
 
-
-
-        <!-- ================= SYSTEM STATUS ================= -->
+        <!-- SYSTEM STATUS -->
 
         <section class="card status-card">
-
 
             <h2>
                 🟢 สถานะระบบ
             </h2>
 
-
             <div class="status-row">
 
                 <span>
-                    Backend
-                </span>
-
+                Backend
+            </span>
 
                 <span id="serverStatus" class="status-online">
 
-                    กำลังตรวจสอบ...
+                กำลังตรวจสอบ...
 
-                </span>
+            </span>
 
             </div>
-
 
             <div class="status-row">
 
                 <span>
-                    SmartBin
-                </span>
-
+                SmartBin
+            </span>
 
                 <span class="status-online">
 
-                    พร้อมใช้งาน
+                พร้อมใช้งาน
 
-                </span>
+            </span>
 
             </div>
 
-
         </section>
 
-
     </main>
+
     <script src="./script.js"></script>
+
+    <!-- Google Maps -->
 
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7o7l0n0-h4lFqKO3xWNCGDxxSROFKfrY&libraries=places&loading=async&callback=initGoogleMap" async defer>
     </script>

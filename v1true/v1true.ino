@@ -3,206 +3,211 @@
 #include "HX711.h"
 #include <TM1637Display.h>
 #include <ESP32Servo.h>
+#include <math.h>
 
-// =================================================
+// ======================================================
 // WIFI
-// =================================================
+// ======================================================
 
 const char* ssid = "Siraphat_2.4G";
 const char* password = "siraphat6323";
 
-// =================================================
-// API
-// =================================================
+// ======================================================
+// BACKEND
+// ======================================================
 
 const char* serverUrl =
-  "http://192.168.1.138:3000/api/recycle";
+  "http://192.168.1.178:3000";
 
-const char* resetUrl =
-  "http://192.168.1.138:3000/api/check-reset";
+// ======================================================
+// PIN
+// ======================================================
 
-const char* lidUrl =
-  "http://192.168.1.138:3000/api/lid";
-
-// =================================================
 // HX711
-// =================================================
+#define HX711_DT 16
+#define HX711_SCK 19
 
-#define DT 16
-#define SCK 19
-
-HX711 scale;
-
-float calibration_factor = 437000.0;
-
-// =================================================
 // TM1637
-// =================================================
-
 #define TM1637_DIO 21
 #define TM1637_CLK 18
+
+// Servo
+#define SERVO_PIN 23
+
+// ======================================================
+// OBJECT
+// ======================================================
+
+HX711 scale;
 
 TM1637Display display(
   TM1637_CLK,
   TM1637_DIO
 );
 
-// =================================================
-// SERVO
-// =================================================
-
-#define SERVO_PIN 23
-
 Servo lidServo;
 
-// มุมปิด
-const int SERVO_CLOSE = 0;
+// ======================================================
+// SERVO
+// ======================================================
 
-// มุมเปิด
-const int SERVO_OPEN = 90;
+#define SERVO_OPEN 0
+#define SERVO_CLOSE 90
 
-// เปิด 3 วินาที
-const unsigned long SERVO_OPEN_TIME = 3000;
+// ======================================================
+// HX711 CALIBRATION
+// ======================================================
 
-bool lidIsOpen = false;
+float calibration_factor = 437000.0;
+
+// ======================================================
+// WEIGHT SETTINGS
+// ======================================================
+
+// ======================================================
+// สำคัญ
+//
+// ไม่มีการกำหนดขั้นต่ำว่าต้องเพิ่มกี่กรัม
+//
+// เช่น
+//
+// 0.55 -> 0.56
+// 0.56 -> 0.57
+// 1.10 -> 1.11
+//
+// ถ้าน้ำหนักเพิ่มขึ้นและนิ่ง
+// จะถือว่าเป็นขวดใหม่
+//
+// ======================================================
+
+// ต้องนิ่งติดต่อกันกี่ครั้ง
+const int STABLE_COUNT_REQUIRED = 5;
+
+// ความแตกต่างของน้ำหนักที่ถือว่า "นิ่ง"
+//
+// ไม่ใช่ค่าขั้นต่ำในการตรวจขวด
+// ใช้เฉพาะตรวจว่าน้ำหนักหยุดนิ่งแล้ว
+//
+const float STABLE_DIFFERENCE = 0.05;
+
+// ======================================================
+// WEIGHT
+// ======================================================
+
+// น้ำหนักจริงทั้งหมดในถัง
+float currentWeight = 0.0;
+
+// น้ำหนักก่อนใส่ขวดใหม่
+float previousWeight = 0.0;
+
+// น้ำหนักที่เพิ่มขึ้นจากขวดใหม่
+float newBottleWeight = 0.0;
+
+// น้ำหนักล่าสุดที่ส่งเว็บ
+float lastSentWeight = 0.0;
+
+// ======================================================
+// STATE
+// ======================================================
+
+enum SystemState {
+
+  WAITING_COMMAND,
+
+  WAITING_NEW_BOTTLE,
+
+  MEASURING,
+
+  SENDING
+
+};
+
+SystemState state =
+  WAITING_COMMAND;
+
+// ======================================================
+// LID
+// ======================================================
+
+bool lidOpen = false;
 
 unsigned long lidOpenTime = 0;
 
-// =================================================
-// ตรวจจับขวด
-// =================================================
+const unsigned long LID_TIMEOUT = 10000;
 
-float newBottleWeight = 0.005;
+// ======================================================
+// STABLE
+// ======================================================
 
-float stableDifference = 0.002;
-
-int stableCountRequired = 5;
-
-// =================================================
-// ตัวแปรระบบ
-// =================================================
-
-float lastConfirmedWeight = 0.0;
-
-float totalWeight = 0.0;
-
-float currentWeight = 0.0;
-
-int bottleCount = 0;
-
-float previousWeight = 0.0;
+float lastAddedWeight = 0.0;
 
 int stableCount = 0;
 
-// =================================================
-// RESET
-// =================================================
+// ======================================================
+// WIFI CHECK
+// ======================================================
 
-unsigned long lastResetCheck = 0;
+unsigned long lastWiFiCheck = 0;
 
-const unsigned long resetCheckInterval = 1000;
+const unsigned long WIFI_CHECK_INTERVAL = 5000;
 
-// =================================================
-// LID CHECK
-// =================================================
-
-unsigned long lastLidCheck = 0;
-
-const unsigned long lidCheckInterval = 300;
-
-// =================================================
+// ======================================================
 // SETUP
-// =================================================
+// ======================================================
 
 void setup() {
 
   Serial.begin(115200);
 
-  // =================================================
+  delay(1000);
+
+  Serial.println();
+  Serial.println("======================================");
+  Serial.println("          SMARTBIN ESP32");
+  Serial.println("======================================");
+
+  // ====================================================
   // TM1637
-  // =================================================
+  // ====================================================
 
   display.setBrightness(7);
 
-  display.showNumberDec(
-    8888,
-    true
-  );
-
-  delay(1000);
-
-  display.showNumberDec(
+  display.showNumberDecEx(
+    0,
     0,
     true
   );
 
-  // =================================================
+  Serial.println("TM1637 initialized");
+
+  // ====================================================
   // SERVO
-  // =================================================
-
-  Serial.println();
-  Serial.println(
-    "================================"
-  );
-
-  Serial.println(
-    "SERVO START"
-  );
-
-  Serial.println(
-    "================================"
-  );
+  // ====================================================
 
   lidServo.setPeriodHertz(50);
 
-  bool servoAttached =
-    lidServo.attach(
-      SERVO_PIN,
-      500,
-      2400
-    );
+  lidServo.attach(
+    SERVO_PIN,
+    500,
+    2400
+  );
 
-  if (servoAttached) {
-
-    Serial.println(
-      "Servo attach OK"
-    );
-
-    Serial.print(
-      "Servo GPIO: "
-    );
-
-    Serial.println(
-      SERVO_PIN
-    );
-
-  } else {
-
-    Serial.println(
-      "Servo attach FAILED"
-    );
-  }
-
-  // ปิดฝาตอนเริ่ม
   lidServo.write(
     SERVO_CLOSE
   );
 
-  delay(500);
+  lidOpen = false;
 
-  lidIsOpen = false;
+  Serial.println("Servo initialized");
+  Serial.println("Lid: CLOSED");
 
-  Serial.println(
-    "Servo position: CLOSE"
-  );
-
-  // =================================================
+  // ====================================================
   // HX711
-  // =================================================
+  // ====================================================
 
   scale.begin(
-    DT,
-    SCK
+    HX711_DT,
+    HX711_SCK
   );
 
   scale.set_scale(
@@ -210,31 +215,202 @@ void setup() {
   );
 
   Serial.println();
-  Serial.println(
-    "================================"
-  );
-
-  Serial.println(
-    "HX711 START"
-  );
-
-  Serial.println(
-    "================================"
-  );
+  Serial.println("Initializing HX711...");
 
   delay(1000);
 
-  scale.tare();
+  // ====================================================
+  // TARE
+  // ====================================================
 
-  Serial.println(
-    "HX711 Tare complete"
-  );
+  Serial.println("Taring scale...");
+
+  scale.tare(20);
 
   delay(500);
 
-  // =================================================
+  Serial.println("HX711 READY");
+
+  // ====================================================
+  // RAW DEBUG
+  // ====================================================
+
+  Serial.println();
+  Serial.println("========== HX711 TEST ==========");
+
+  if (scale.is_ready()) {
+
+    long raw =
+      scale.read_average(10);
+
+    Serial.print("Raw HX711: ");
+    Serial.println(raw);
+
+    float testWeight =
+      scale.get_units(10);
+
+    if (testWeight < 0) {
+      testWeight = 0;
+    }
+
+    Serial.print("Weight: ");
+    Serial.print(testWeight, 2);
+    Serial.println(" g");
+
+  } else {
+
+    Serial.println(
+      "ERROR: HX711 NOT READY"
+    );
+
+  }
+
+  Serial.println(
+    "================================"
+  );
+
+  // ====================================================
   // WIFI
-  // =================================================
+  // ====================================================
+
+  connectWiFi();
+
+  // ====================================================
+  // INITIAL DISPLAY
+  // ====================================================
+
+  displayWeight(0.0);
+
+  // ====================================================
+  // READY
+  // ====================================================
+
+  Serial.println();
+  Serial.println("======================================");
+  Serial.println("          SMARTBIN READY");
+  Serial.println("======================================");
+
+  Serial.print("Backend: ");
+  Serial.println(serverUrl);
+
+  Serial.println();
+  Serial.println(
+    "Waiting for YOLO command..."
+  );
+
+}
+
+// ======================================================
+// LOOP
+// ======================================================
+
+void loop() {
+
+  // ====================================================
+  // WIFI
+  // ====================================================
+
+  if (
+    millis() - lastWiFiCheck >=
+    WIFI_CHECK_INTERVAL
+  ) {
+
+    lastWiFiCheck = millis();
+
+    if (
+      WiFi.status() != WL_CONNECTED
+    ) {
+
+      Serial.println(
+        "WiFi disconnected!"
+      );
+
+      connectWiFi();
+
+    }
+
+  }
+
+  // ====================================================
+  // STATE
+  // ====================================================
+
+  switch (state) {
+
+    case WAITING_COMMAND:
+
+      checkLidCommand();
+
+      break;
+
+    case WAITING_NEW_BOTTLE:
+
+      measureNewBottle();
+
+      break;
+
+    case MEASURING:
+
+      measureNewBottle();
+
+      break;
+
+    case SENDING:
+
+      break;
+
+  }
+
+  // ====================================================
+  // AUTO CLOSE
+  // ====================================================
+
+  if (
+    lidOpen &&
+    millis() - lidOpenTime >=
+    LID_TIMEOUT
+  ) {
+
+    Serial.println();
+    Serial.println(
+      "Lid timeout!"
+    );
+
+    Serial.println(
+      "No new bottle detected."
+    );
+
+    closeLid();
+
+    state =
+      WAITING_COMMAND;
+
+  }
+
+  delay(100);
+
+}
+
+// ======================================================
+// CONNECT WIFI
+// ======================================================
+
+void connectWiFi() {
+
+  Serial.println();
+  Serial.println(
+    "======================================"
+  );
+
+  Serial.println(
+    "          CONNECTING WIFI"
+  );
+
+  Serial.println(
+    "======================================"
+  );
+
+  WiFi.mode(WIFI_STA);
 
   WiFi.begin(
     ssid,
@@ -242,354 +418,506 @@ void setup() {
   );
 
   Serial.print(
-    "Connecting WiFi"
+    "Connecting"
   );
 
+  int retry = 0;
+
   while (
-    WiFi.status() != WL_CONNECTED
+    WiFi.status() != WL_CONNECTED &&
+    retry < 30
   ) {
 
     delay(500);
 
-    Serial.print(
-      "."
+    Serial.print(".");
+
+    retry++;
+
+  }
+
+  Serial.println();
+
+  if (
+    WiFi.status() ==
+    WL_CONNECTED
+  ) {
+
+    Serial.println(
+      "WiFi connected!"
     );
+
+    Serial.print(
+      "ESP32 IP: "
+    );
+
+    Serial.println(
+      WiFi.localIP()
+    );
+
+    Serial.print(
+      "Backend: "
+    );
+
+    Serial.println(
+      serverUrl
+    );
+
+  } else {
+
+    Serial.println(
+      "ERROR: WiFi connection failed"
+    );
+
   }
 
-  Serial.println();
-
   Serial.println(
-    "WiFi Connected!"
+    "======================================"
   );
 
-  Serial.print(
-    "ESP32 IP: "
-  );
-
-  Serial.println(
-    WiFi.localIP()
-  );
-
-  // =================================================
-  // อ่านน้ำหนักเริ่มต้น
-  // =================================================
-
-  float startWeight =
-    scale.get_units(10);
-
-  if (startWeight < 0) {
-    startWeight = 0;
-  }
-
-  currentWeight =
-    startWeight;
-
-  lastConfirmedWeight =
-    startWeight;
-
-  previousWeight =
-    startWeight;
-
-  // =================================================
-  // READY
-  // =================================================
-
-  Serial.println();
-  Serial.println(
-    "================================"
-  );
-
-  Serial.println(
-    "       SMART BIN READY"
-  );
-
-  Serial.println(
-    "================================"
-  );
-
-  Serial.print(
-    "Starting weight: "
-  );
-
-  Serial.print(
-    startWeight,
-    3
-  );
-
-  Serial.println(
-    " kg"
-  );
-
-  Serial.print(
-    "Baseline: "
-  );
-
-  Serial.print(
-    lastConfirmedWeight,
-    3
-  );
-
-  Serial.println(
-    " kg"
-  );
-
-  Serial.println();
-
-  display.showNumberDec(
-    0,
-    true
-  );
 }
 
-// =================================================
-// LOOP
-// =================================================
+// ======================================================
+// GET WEIGHT
+// ======================================================
 
-void loop() {
-
-  // =================================================
-  // CHECK RESET
-  // =================================================
-
-  if (
-    millis() - lastResetCheck >=
-    resetCheckInterval
-  ) {
-
-    lastResetCheck =
-      millis();
-
-    checkResetCommand();
-  }
-
-  // =================================================
-  // CHECK LID
-  // =================================================
-
-  if (
-    millis() - lastLidCheck >=
-    lidCheckInterval
-  ) {
-
-    lastLidCheck =
-      millis();
-
-    checkLidCommand();
-  }
-
-  // =================================================
-  // AUTO CLOSE AFTER 3 SEC
-  // =================================================
-
-  if (
-    lidIsOpen &&
-    millis() - lidOpenTime >=
-    SERVO_OPEN_TIME
-  ) {
-
-    Serial.println();
-    Serial.println(
-      "================================"
-    );
-
-    Serial.println(
-      "⏰ 3 seconds finished"
-    );
-
-    Serial.println(
-      "================================"
-    );
-
-    closeLid();
-  }
-
-  // =================================================
-  // CHECK HX711
-  // =================================================
+float getWeight() {
 
   if (
     !scale.is_ready()
   ) {
 
     Serial.println(
-      "HX711 not found!"
+      "HX711 NOT READY"
     );
 
-    delay(500);
+    return currentWeight;
 
-    return;
   }
-
-  // =================================================
-  // READ WEIGHT
-  // =================================================
 
   float weight =
-    scale.get_units(5);
-
-  if (weight < 0) {
-    weight = 0;
-  }
-
-  currentWeight =
-    weight;
-
-  // =================================================
-  // SERIAL
-  // =================================================
-
-  Serial.print(
-    "Weight: "
-  );
-
-  Serial.print(
-    weight,
-    3
-  );
-
-  Serial.print(
-    " kg | "
-  );
-
-  Serial.print(
-    weight * 1000,
-    1
-  );
-
-  Serial.print(
-    " g | Count: "
-  );
-
-  Serial.println(
-    bottleCount
-  );
-
-  // =================================================
-  // DISPLAY TOTAL WEIGHT
-  // =================================================
-
-  int totalGram =
-    (int)round(
-      totalWeight * 1000.0
-    );
-
-  if (totalGram > 9999) {
-    totalGram = 9999;
-  }
-
-  if (totalGram < 0) {
-    totalGram = 0;
-  }
-
-  display.showNumberDec(
-    totalGram,
-    true
-  );
-
-  // =================================================
-  // CHECK STABLE WEIGHT
-  // =================================================
+    scale.get_units(10);
 
   if (
-    abs(
-      weight -
-      previousWeight
-    ) <= stableDifference
+    weight < 0
   ) {
 
-    stableCount++;
+    weight = 0;
+
+  }
+
+  return weight;
+
+}
+
+// ======================================================
+// CHECK LID COMMAND
+// ======================================================
+
+void checkLidCommand() {
+
+  if (
+    WiFi.status() != WL_CONNECTED
+  ) {
+
+    return;
+
+  }
+
+  HTTPClient http;
+
+  String url =
+    String(serverUrl) +
+    "/api/lid";
+
+  http.begin(url);
+
+  http.setTimeout(3000);
+
+  int httpCode =
+    http.GET();
+
+  if (
+    httpCode == 200
+  ) {
+
+    String response =
+      http.getString();
+
+    Serial.print(
+      "Lid API: "
+    );
+
+    Serial.println(
+      response
+    );
+
+    // ==================================================
+    // OPEN
+    // ==================================================
+
+    if (
+      response.indexOf(
+        "\"action\":\"open\""
+      ) >= 0
+      ||
+      response.indexOf(
+        "\"action\": \"open\""
+      ) >= 0
+    ) {
+
+      if (!lidOpen) {
+
+        openLid();
+
+        state =
+          WAITING_NEW_BOTTLE;
+
+      }
+
+    }
+
+    // ==================================================
+    // CLOSE
+    // ==================================================
+
+    if (
+      response.indexOf(
+        "\"action\":\"close\""
+      ) >= 0
+      ||
+      response.indexOf(
+        "\"action\": \"close\""
+      ) >= 0
+    ) {
+
+      if (lidOpen) {
+
+        closeLid();
+
+        state =
+          WAITING_COMMAND;
+
+      }
+
+    }
 
   } else {
 
-    stableCount = 0;
+    if (
+      httpCode < 0
+    ) {
+
+      Serial.print(
+        "Lid API Error: "
+      );
+
+      Serial.println(
+        http.errorToString(
+          httpCode
+        )
+      );
+
+    }
+
   }
+
+  http.end();
+
+}
+
+// ======================================================
+// OPEN LID
+// ======================================================
+
+void openLid() {
+
+  Serial.println();
+  Serial.println(
+    "======================================"
+  );
+
+  Serial.println(
+    "            OPENING LID"
+  );
+
+  Serial.println(
+    "======================================"
+  );
+
+  // ====================================================
+  // อ่านน้ำหนักจริงก่อนรับขวดใหม่
+  //
+  // ตัวอย่าง:
+  //
+  // ขวด 1 อยู่ในถัง
+  // previousWeight = 0.55
+  //
+  // ขวด 2 ลงมา
+  // HX711 = 0.57
+  //
+  // จะตรวจว่า
+  // 0.57 > 0.55
+  //
+  // ====================================================
+
+  delay(500);
 
   previousWeight =
-    weight;
+    getWeight();
 
-  // =================================================
-  // NOT STABLE
-  // =================================================
-
-  if (
-    stableCount <
-    stableCountRequired
-  ) {
-
-    delay(200);
-
-    return;
-  }
-
-  // =================================================
-  // STABLE
-  // =================================================
-
-  float weightIncrease =
-    weight -
-    lastConfirmedWeight;
+  currentWeight =
+    previousWeight;
 
   Serial.print(
-    "เพิ่มขึ้น: "
+    "Weight before new bottle: "
   );
 
   Serial.print(
-    weightIncrease * 1000,
-    1
+    previousWeight,
+    2
   );
 
   Serial.println(
     " g"
   );
 
-  // =================================================
-  // NEW BOTTLE
-  // =================================================
+  // ====================================================
+  // OPEN SERVO
+  // ====================================================
 
+  lidServo.write(
+    SERVO_OPEN
+  );
+
+  lidOpen = true;
+
+  lidOpenTime =
+    millis();
+
+  stableCount = 0;
+
+  lastAddedWeight =
+    0.0;
+
+  newBottleWeight =
+    0.0;
+
+  Serial.println(
+    "Servo = 90 degrees"
+  );
+
+  Serial.println();
+
+  Serial.println(
+    "Waiting for NEW bottle..."
+  );
+
+  Serial.print(
+    "Current total weight: "
+  );
+
+  Serial.print(
+    previousWeight,
+    2
+  );
+
+  Serial.println(
+    " g"
+  );
+
+  Serial.println(
+    "ANY weight increase will be detected as a new bottle."
+  );
+
+}
+
+// ======================================================
+// MEASURE NEW BOTTLE
+// ======================================================
+
+void measureNewBottle() {
+
+  if (!lidOpen) {
+
+    return;
+
+  }
+
+  // ====================================================
+  // READ TOTAL REAL WEIGHT
+  // ====================================================
+
+  float weight =
+    getWeight();
+
+  currentWeight =
+    weight;
+
+  // ====================================================
+  // CALCULATE INCREASE
+  // ====================================================
+
+  float addedWeight =
+    weight - previousWeight;
+
+  // ถ้าน้ำหนักลดลง
+  // ไม่ถือว่าเป็นขวดใหม่
   if (
-    weightIncrease >=
-    newBottleWeight
+    addedWeight < 0
   ) {
 
-    // เพิ่มจำนวน
-    bottleCount++;
+    addedWeight = 0;
 
-    // น้ำหนักขวดใหม่
-    float newWeight =
-      weightIncrease;
+  }
 
-    // น้ำหนักรวม
-    totalWeight +=
-      newWeight;
+  // ====================================================
+  // SERIAL
+  // ====================================================
 
-    // อัปเดต baseline
-    lastConfirmedWeight =
+  Serial.print(
+    "HX711 Total Weight: "
+  );
+
+  Serial.print(
+    weight,
+    2
+  );
+
+  Serial.print(
+    " g | Added: "
+  );
+
+  Serial.print(
+    addedWeight,
+    2
+  );
+
+  Serial.println(
+    " g"
+  );
+
+  // ====================================================
+  // TM1637
+  // ====================================================
+
+  displayWeight(
+    weight
+  );
+
+  // ====================================================
+  // สำคัญ
+  //
+  // ไม่มี MIN_NEW_BOTTLE_WEIGHT แล้ว
+  //
+  // ขอแค่น้ำหนักเพิ่มมากกว่า 0
+  //
+  // เช่น:
+  //
+  // 0.55 -> 0.56 = ตรวจ
+  // 0.56 -> 0.57 = ตรวจ
+  // 1.10 -> 1.11 = ตรวจ
+  //
+  // ====================================================
+
+  if (
+    addedWeight <= 0
+  ) {
+
+    stableCount = 0;
+
+    lastAddedWeight =
+      0.0;
+
+    return;
+
+  }
+
+  // ====================================================
+  // CHECK STABLE
+  // ====================================================
+
+  float difference =
+    fabs(
+      addedWeight -
+      lastAddedWeight
+    );
+
+  if (
+    difference <=
+    STABLE_DIFFERENCE
+  ) {
+
+    stableCount++;
+
+  } else {
+
+    stableCount = 1;
+
+  }
+
+  lastAddedWeight =
+    addedWeight;
+
+  Serial.print(
+    "Stable: "
+  );
+
+  Serial.print(
+    stableCount
+  );
+
+  Serial.print(
+    "/"
+  );
+
+  Serial.println(
+    STABLE_COUNT_REQUIRED
+  );
+
+  // ====================================================
+  // STABLE
+  // ====================================================
+
+  if (
+    stableCount >=
+    STABLE_COUNT_REQUIRED
+  ) {
+
+    // ==================================================
+    // น้ำหนักขวดที่เพิ่ม
+    // ==================================================
+
+    newBottleWeight =
+      addedWeight;
+
+    // ==================================================
+    // น้ำหนักรวมจริงในถัง
+    // ==================================================
+
+    float totalWeight =
       weight;
 
     Serial.println();
     Serial.println(
-      "================================"
+      "======================================"
     );
 
     Serial.println(
-      "🍾 พบขวดใหม่!"
-    );
-
-    Serial.print(
-      "จำนวนขวด: "
+      "          NEW BOTTLE DETECTED"
     );
 
     Serial.println(
-      bottleCount
+      "======================================"
     );
 
     Serial.print(
-      "น้ำหนักขวดใหม่: "
+      "Previous total weight: "
     );
 
     Serial.print(
-      newWeight * 1000,
-      1
+      previousWeight,
+      2
     );
 
     Serial.println(
@@ -597,421 +925,423 @@ void loop() {
     );
 
     Serial.print(
-      "น้ำหนักรวม: "
+      "Weight increased: "
+    );
+
+    Serial.print(
+      newBottleWeight,
+      2
+    );
+
+    Serial.println(
+      " g"
+    );
+
+    Serial.print(
+      "TOTAL REAL WEIGHT: "
     );
 
     Serial.print(
       totalWeight,
-      3
+      2
     );
 
     Serial.println(
-      " kg"
+      " g"
     );
 
-    Serial.println(
-      "================================"
-    );
+    // ==================================================
+    // DISPLAY TOTAL
+    // ==================================================
 
-    // =================================================
-    // DISPLAY
-    // =================================================
-
-    int newTotalGram =
-      (int)round(
-        totalWeight * 1000.0
-      );
-
-    if (
-      newTotalGram > 9999
-    ) {
-
-      newTotalGram = 9999;
-    }
-
-    display.showNumberDec(
-      newTotalGram,
-      true
-    );
-
-    // =================================================
-    // SEND API
-    // =================================================
-
-    sendToAPI(
-      newWeight,
-      bottleCount,
+    displayWeight(
       totalWeight
     );
 
-    stableCount = 0;
+    // ==================================================
+    // SEND TOTAL TO WEB
+    // ==================================================
 
-    delay(500);
+    state =
+      SENDING;
+
+    bool sent =
+      sendRecycleData(
+        totalWeight
+      );
+
+    // ==================================================
+    // ถ้าส่งสำเร็จเท่านั้น
+    // ให้ถือว่ารับขวดเรียบร้อย
+    // ==================================================
+
+    if (sent) {
+
+      delay(500);
+
+      closeLid();
+
+      // =================================================
+      // อัปเดตฐานเป็นน้ำหนักรวมล่าสุด
+      // =================================================
+
+      previousWeight =
+        totalWeight;
+
+      currentWeight =
+        totalWeight;
+
+      stableCount = 0;
+
+      lastAddedWeight =
+        0.0;
+
+      newBottleWeight =
+        0.0;
+
+      state =
+        WAITING_COMMAND;
+
+      Serial.println();
+      Serial.println(
+        "======================================"
+      );
+
+      Serial.println(
+        "TOTAL WEIGHT SAVED"
+      );
+
+      Serial.print(
+        "Current tank weight: "
+      );
+
+      Serial.print(
+        previousWeight,
+        2
+      );
+
+      Serial.println(
+        " g"
+      );
+
+      Serial.println(
+        "Lid CLOSED"
+      );
+
+      Serial.println(
+        "Waiting for next bottle..."
+      );
+
+      Serial.println(
+        "======================================"
+      );
+
+    } else {
+
+      // =================================================
+      // ถ้าส่งไม่สำเร็จ
+      // ห้ามอัปเดต previousWeight
+      //
+      // เพื่อให้สามารถส่งขวดนี้ใหม่ได้
+      // =================================================
+
+      Serial.println();
+      Serial.println(
+        "ERROR: Weight was NOT sent."
+      );
+
+      Serial.println(
+        "Keeping current bottle state."
+      );
+
+      stableCount = 0;
+
+      state =
+        WAITING_NEW_BOTTLE;
+
+    }
+
   }
 
-  delay(200);
 }
 
-// =================================================
-// OPEN LID
-// =================================================
+// ======================================================
+// DISPLAY WEIGHT
+// ======================================================
 
-void openLid() {
+void displayWeight(
+  float weight
+) {
 
-  Serial.println();
-  Serial.println(
-    "================================"
+  if (
+    weight < 0
+  ) {
+
+    weight = 0;
+
+  }
+
+  if (
+    weight > 99.99
+  ) {
+
+    weight = 99.99;
+
+  }
+
+  int value =
+    (int)round(
+      weight * 100.0
+    );
+
+  display.showNumberDecEx(
+    value,
+    0b01000000,
+    true
   );
-
-  Serial.println(
-    "🚪 OPEN LID"
-  );
-
-  Serial.println(
-    "================================"
-  );
-
-  // เปิด Servo
-  lidServo.write(
-    SERVO_OPEN
-  );
-
-  // บันทึกสถานะ
-  lidIsOpen = true;
-
-  // เริ่มจับเวลาใหม่
-  lidOpenTime =
-    millis();
 
   Serial.print(
-    "Open time: "
+    "TM1637 TOTAL: "
   );
 
   Serial.print(
-    SERVO_OPEN_TIME
+    weight,
+    2
   );
 
   Serial.println(
-    " ms"
+    " g"
   );
+
 }
 
-// =================================================
+// ======================================================
 // CLOSE LID
-// =================================================
+// ======================================================
 
 void closeLid() {
 
   Serial.println();
   Serial.println(
-    "================================"
+    "======================================"
   );
 
   Serial.println(
-    "🚪 CLOSE LID"
+    "            CLOSING LID"
   );
 
   Serial.println(
-    "================================"
+    "======================================"
   );
 
-  // ปิด Servo
   lidServo.write(
     SERVO_CLOSE
   );
 
-  // เปลี่ยนสถานะ
-  lidIsOpen = false;
+  lidOpen = false;
 
   Serial.println(
-    "Servo position: CLOSE"
-  );
-}
-
-// =================================================
-// CHECK LID COMMAND
-// =================================================
-
-void checkLidCommand() {
-
-  if (
-    WiFi.status() !=
-    WL_CONNECTED
-  ) {
-
-    return;
-  }
-
-  HTTPClient http;
-
-  http.begin(
-    lidUrl
+    "Servo = 0 degrees"
   );
 
-  int response =
-    http.GET();
+  Serial.println(
+    "Lid CLOSED"
+  );
 
-  if (
-    response == 200
-  ) {
-
-    String result =
-      http.getString();
-
-    Serial.print(
-      "Lid check: "
-    );
-
-    Serial.println(
-      result
-    );
-
-    // =================================================
-    // OPEN COMMAND
-    // =================================================
-
-    if (
-      result.indexOf(
-        "\"action\":\"open\""
-      ) >= 0
-    ) {
-
-      openLid();
-    }
-
-    // =================================================
-    // CLOSE COMMAND
-    // =================================================
-
-    if (
-      result.indexOf(
-        "\"action\":\"close\""
-      ) >= 0
-    ) {
-
-      closeLid();
-    }
-  }
-
-  http.end();
 }
 
-// =================================================
-// SEND DATA TO API
-// =================================================
+// ======================================================
+// SEND RECYCLE DATA
+// ======================================================
+//
+// ส่งน้ำหนักรวมจริงในถัง
+//
+// ตัวอย่าง:
+//
+// รอบ 1
+// HX711 = 0.55
+// ส่งเว็บ = 0.55
+//
+// รอบ 2
+// HX711 = 0.57
+// ส่งเว็บ = 0.57
+//
+// รอบ 3
+// HX711 = 1.10
+// ส่งเว็บ = 1.10
+//
+// ======================================================
 
-void sendToAPI(
-  float bottleWeight,
-  int count,
-  float totalWeight
+bool sendRecycleData(
+  float weight
 ) {
 
   if (
-    WiFi.status() !=
-    WL_CONNECTED
+    WiFi.status() != WL_CONNECTED
   ) {
 
     Serial.println(
-      "WiFi disconnected!"
+      "ERROR: WiFi disconnected"
     );
 
-    return;
+    return false;
+
   }
 
   HTTPClient http;
 
-  http.begin(
-    serverUrl
-  );
+  String url =
+    String(serverUrl) +
+    "/api/recycle";
+
+  http.begin(url);
+
+  http.setTimeout(10000);
 
   http.addHeader(
     "Content-Type",
     "application/json"
   );
 
-  String jsonData =
+  // ====================================================
+  // JSON
+  // ====================================================
+
+  String json =
     "{\"weight\":" +
-    String(
-      bottleWeight,
-      3
-    ) +
+    String(weight, 2) +
+    ",\"isBottle\":true}";
 
-    ",\"isBottle\":true" +
-
-    ",\"count\":" +
-    String(count) +
-
-    ",\"totalWeight\":" +
-    String(
-      totalWeight,
-      3
-    ) +
-
-    "}";
+  // ====================================================
+  // SERIAL
+  // ====================================================
 
   Serial.println();
   Serial.println(
-    "Sending API:"
+    "======================================"
   );
 
   Serial.println(
-    jsonData
+    "       SEND TOTAL WEIGHT TO WEB"
   );
 
-  int response =
+  Serial.println(
+    "======================================"
+  );
+
+  Serial.print(
+    "URL: "
+  );
+
+  Serial.println(
+    url
+  );
+
+  Serial.print(
+    "TOTAL HX711 WEIGHT: "
+  );
+
+  Serial.print(
+    weight,
+    2
+  );
+
+  Serial.println(
+    " g"
+  );
+
+  Serial.print(
+    "JSON: "
+  );
+
+  Serial.println(
+    json
+  );
+
+  // ====================================================
+  // POST
+  // ====================================================
+
+  int httpCode =
     http.POST(
-      jsonData
+      json
     );
 
   Serial.print(
-    "HTTP Response: "
+    "HTTP Code: "
   );
 
   Serial.println(
-    response
+    httpCode
   );
 
+  // ====================================================
+  // RESPONSE
+  // ====================================================
+
   if (
-    response > 0
+    httpCode > 0
   ) {
 
-    String responseBody =
+    String response =
       http.getString();
 
     Serial.print(
-      "Server: "
+      "Backend Response: "
     );
 
     Serial.println(
-      responseBody
+      response
     );
-  }
-
-  http.end();
-}
-
-// =================================================
-// CHECK RESET
-// =================================================
-
-void checkResetCommand() {
-
-  if (
-    WiFi.status() !=
-    WL_CONNECTED
-  ) {
-
-    return;
-  }
-
-  HTTPClient http;
-
-  http.begin(
-    resetUrl
-  );
-
-  int response =
-    http.GET();
-
-  if (
-    response == 200
-  ) {
-
-    String result =
-      http.getString();
-
-    Serial.print(
-      "Reset check: "
-    );
-
-    Serial.println(
-      result
-    );
-
-    // =================================================
-    // RESET COMMAND
-    // =================================================
 
     if (
-      result.indexOf(
-        "\"reset\":true"
-      ) >= 0
+      httpCode >= 200 &&
+      httpCode < 300
     ) {
 
-      Serial.println();
       Serial.println(
-        "================================"
-      );
-
-      Serial.println(
-        "🔄 RESET FROM WEB"
+        "======================================"
       );
 
       Serial.println(
-        "================================"
-      );
-
-      // อ่านน้ำหนักปัจจุบัน
-      float resetWeight =
-        scale.get_units(10);
-
-      if (
-        resetWeight < 0
-      ) {
-
-        resetWeight = 0;
-      }
-
-      currentWeight =
-        resetWeight;
-
-      // Reset จำนวน
-      bottleCount = 0;
-
-      // Reset น้ำหนักรวม
-      totalWeight = 0.0;
-
-      // ตั้ง baseline ใหม่
-      lastConfirmedWeight =
-        resetWeight;
-
-      previousWeight =
-        resetWeight;
-
-      stableCount = 0;
-
-      // Reset จอ
-      display.showNumberDec(
-        0,
-        true
-      );
-
-      Serial.print(
-        "New baseline: "
-      );
-
-      Serial.print(
-        resetWeight,
-        3
+        "     TOTAL WEIGHT SENT SUCCESSFULLY"
       );
 
       Serial.println(
-        " kg"
+        "======================================"
       );
 
-      Serial.println(
-        "Bottle count = 0"
-      );
+      lastSentWeight =
+        weight;
+
+      http.end();
+
+      return true;
+
+    } else {
 
       Serial.println(
-        "Total weight = 0"
+        "Backend returned error."
       );
 
-      Serial.println(
-        "================================"
-      );
     }
+
+  } else {
+
+    Serial.print(
+      "HTTP ERROR: "
+    );
+
+    Serial.println(
+      http.errorToString(
+        httpCode
+      )
+    );
+
   }
 
   http.end();
+
+  return false;
+
 }

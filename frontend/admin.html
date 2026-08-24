@@ -1,75 +1,102 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Admin Panel - SmartBin</title>
+    <meta charset="utf-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>
+        Admin Panel - SmartBin
+    </title>
 
     <link rel="stylesheet" href="./admin.css">
+
 </head>
 
 <body>
 
     <div class="container">
 
-        <!-- ================= HEADER ================= -->
+        <!-- HEADER -->
 
         <div class="header">
 
             <div>
-                <h1>⚙️ Admin Panel</h1>
-                <p>จัดการระบบ SmartBin</p>
+
+                <h1>
+                    ⚙️ Admin Panel
+                </h1>
+
+                <p>
+                    จัดการระบบ SmartBin
+                </p>
+
             </div>
 
             <a href="index.html" class="back-btn">
-                ← กลับหน้าหลัก
-            </a>
+
+            ← กลับหน้าหลัก
+
+        </a>
 
         </div>
 
-
-        <!-- ================= SET PRICE ================= -->
+        <!-- SET PRICE -->
 
         <div class="card">
 
-            <h2>💰 ตั้งราคาขวดพลาสติก</h2>
+            <h2>
+                💰 ตั้งราคาขวดพลาสติก
+            </h2>
 
             <p class="description">
-                กำหนดราคาที่ระบบจะใช้คำนวณเงินจากน้ำหนักขวด
+
+                กำหนดราคาที่ระบบจะใช้ คำนวณเงินจากน้ำหนักขวด
+
             </p>
 
             <div class="price-box">
 
                 <input type="number" id="priceInput" placeholder="เช่น 12" min="0" step="0.01">
 
-                <span>บาท / กก.</span>
+                <span>
+                บาท / กก.
+            </span>
 
             </div>
 
             <button class="primary-btn" onclick="setPrice()">
-                💾 บันทึกราคา
-            </button>
+
+            💾 บันทึกราคา
+
+        </button>
 
             <div class="current-price">
 
                 ราคาปัจจุบัน
 
                 <strong>
-                    <span id="currentPrice">-</span>
-                </strong> บาท/กก.
+
+                <span
+                    id="currentPrice">
+                    -
+                </span>
+
+            </strong> บาท/กก.
 
             </div>
 
         </div>
 
-
-        <!-- ================= RESET ================= -->
+        <!-- RESET -->
 
         <div class="card warning-card">
 
-            <h2>🔄 รีเซ็ตระบบ</h2>
+            <h2>
+                🔄 รีเซ็ตระบบ
+            </h2>
 
             <p class="description">
 
@@ -78,24 +105,27 @@
                 <br>
 
                 <strong>
-                    ขวดเก่าที่ยังอยู่บนเครื่องชั่ง
-                    จะไม่ถูกลบออกจากน้ำหนักจริง
-                </strong>
+                ขวดเก่าที่ยังอยู่บนเครื่องชั่ง
+                จะไม่ถูกลบออกจากน้ำหนักจริง
+            </strong>
 
             </p>
 
             <button class="warning-btn" onclick="resetData()">
-                🔄 Reset ระบบ
-            </button>
+
+            🔄 Reset ระบบ
+
+        </button>
 
         </div>
 
-
-        <!-- ================= DELETE HISTORY ================= -->
+        <!-- DELETE HISTORY -->
 
         <div class="card danger-card">
 
-            <h2>🗑️ ลบประวัติการขาย</h2>
+            <h2>
+                🗑️ ลบประวัติการขาย
+            </h2>
 
             <p class="description">
 
@@ -104,31 +134,38 @@
                 <br>
 
                 <strong>
-                    การดำเนินการนี้ไม่สามารถย้อนกลับได้
-                </strong>
+                การดำเนินการนี้ไม่สามารถย้อนกลับได้
+            </strong>
 
             </p>
 
             <button class="danger-btn" onclick="deleteHistory()">
-                🗑️ ลบประวัติทั้งหมด
-            </button>
+
+            🗑️ ลบประวัติทั้งหมด
+
+        </button>
 
         </div>
 
-
-        <!-- ================= STATUS ================= -->
+        <!-- STATUS -->
 
         <div class="card">
 
-            <h2>📡 สถานะระบบ</h2>
+            <h2>
+                📡 สถานะระบบ
+            </h2>
 
             <div class="status-row">
 
-                <span>Backend</span>
+                <span>
+                Backend
+            </span>
 
                 <span id="serverStatus" class="status offline">
-                    กำลังตรวจสอบ...
-                </span>
+
+                กำลังตรวจสอบ...
+
+            </span>
 
             </div>
 
@@ -136,18 +173,12 @@
 
     </div>
 
-
-    <!-- =====================================================
-         JAVASCRIPT
-    ====================================================== -->
-
     <script>
         // =====================================================
-        // RENDER BACKEND
+        // LOCALHOST BACKEND
         // =====================================================
 
-        const API =
-            "https://smartbin-backend-hvht.onrender.com";
+        const API = "/api";
 
 
         // =====================================================
@@ -155,10 +186,14 @@
         // =====================================================
 
         const serverStatus =
-            document.getElementById("serverStatus");
+            document.getElementById(
+                "serverStatus"
+            );
 
         const currentPrice =
-            document.getElementById("currentPrice");
+            document.getElementById(
+                "currentPrice"
+            );
 
 
         // =====================================================
@@ -169,27 +204,10 @@
 
             try {
 
-                console.log(
-                    "🔄 กำลังเชื่อมต่อ Backend..."
-                );
-
-                console.log(
-                    "API:",
-                    `${API}/api/data`
-                );
-
-
                 const response =
                     await fetch(
-                        `${API}/api/data`
+                        `${API}/data`
                     );
-
-
-                console.log(
-                    "HTTP Status:",
-                    response.status
-                );
-
 
                 if (!response.ok) {
 
@@ -199,72 +217,22 @@
 
                 }
 
-
                 const data =
                     await response.json();
 
-
-                console.log(
-                    "✅ Backend Data:",
-                    data
-                );
-
-
-                // =================================================
-                // PRICE
-                // =================================================
-
-                let pricePerKg = 0;
-
-
-                if (
-                    data.pricePerKg !== undefined &&
-                    data.pricePerKg !== null
-                ) {
-
-                    pricePerKg =
-                        Number(data.pricePerKg);
-
-                } else if (
-                    data.petPrice !== undefined &&
-                    data.petPrice !== null
-                ) {
-
-                    pricePerKg =
-                        Number(data.petPrice);
-
-                } else if (
-                    data.weight &&
-                    Number(data.weight) > 0 &&
-                    data.price !== undefined
-                ) {
-
-                    pricePerKg =
-                        Number(data.price) /
-                        Number(data.weight);
-
-                }
-
+                const price =
+                    Number(
+                        data.pricePerKg || 0
+                    );
 
                 currentPrice.innerText =
-                    pricePerKg.toFixed(2);
-
-
-                // =================================================
-                // ONLINE
-                // =================================================
+                    price.toFixed(2);
 
                 serverStatus.innerText =
                     "🟢 ออนไลน์";
 
                 serverStatus.className =
                     "status online";
-
-
-                console.log(
-                    "🟢 Backend Online"
-                );
-
 
             } catch (error) {
 
@@ -273,13 +241,11 @@
                     error
                 );
 
-
                 serverStatus.innerText =
                     "🔴 ออฟไลน์";
 
                 serverStatus.className =
                     "status offline";
-
 
                 currentPrice.innerText =
                     "-";
@@ -300,12 +266,8 @@
                     "priceInput"
                 );
 
-
             const price =
                 Number(input.value);
-
-
-            // ตรวจสอบราคา
 
             if (!price ||
                 price <= 0
@@ -319,23 +281,18 @@
 
             }
 
-
             try {
-
-                console.log(
-                    "💰 กำลังตั้งราคา:",
-                    price
-                );
-
 
                 const response =
                     await fetch(
-                        `${API}/api/set-price`, {
+                        `${API}/set-price`, {
 
                             method: "POST",
 
                             headers: {
+
                                 "Content-Type": "application/json"
+
                             },
 
                             body: JSON.stringify({
@@ -347,13 +304,6 @@
                         }
                     );
 
-
-                console.log(
-                    "Set price status:",
-                    response.status
-                );
-
-
                 if (!response.ok) {
 
                     throw new Error(
@@ -362,29 +312,21 @@
 
                 }
 
-
-                const data =
+                const result =
                     await response.json();
 
-
                 console.log(
-                    "Set price response:",
-                    data
+                    "Set price:",
+                    result
                 );
-
 
                 alert(
                     "✅ บันทึกราคาสำเร็จ"
                 );
 
-
                 input.value = "";
 
-
-                // โหลดราคาใหม่
-
                 loadCurrentPrice();
-
 
             } catch (error) {
 
@@ -392,7 +334,6 @@
                     "❌ Set price error:",
                     error
                 );
-
 
                 alert(
                     "❌ ไม่สามารถบันทึกราคาได้\n\n" +
@@ -415,32 +356,22 @@
                     "⚠️ ต้องการ Reset ระบบใช่หรือไม่?"
                 );
 
-
             if (!confirmReset) {
-                return;
-            }
 
+                return;
+
+            }
 
             try {
 
-                console.log(
-                    "🔄 กำลัง Reset..."
-                );
-
-
                 const response =
                     await fetch(
-                        `${API}/api/reset`, {
+                        `${API}/reset`, {
+
                             method: "POST"
+
                         }
                     );
-
-
-                console.log(
-                    "Reset status:",
-                    response.status
-                );
-
 
                 if (!response.ok) {
 
@@ -450,24 +381,13 @@
 
                 }
 
-
-                const data =
-                    await response.json();
-
-
-                console.log(
-                    "Reset response:",
-                    data
-                );
-
+                await response.json();
 
                 alert(
                     "✅ Reset ระบบสำเร็จ"
                 );
 
-
                 loadCurrentPrice();
-
 
             } catch (error) {
 
@@ -475,7 +395,6 @@
                     "❌ Reset error:",
                     error
                 );
-
 
                 alert(
                     "❌ ไม่สามารถ Reset ระบบได้\n\n" +
@@ -498,34 +417,22 @@
                     "⚠️ ต้องการลบประวัติการขายทั้งหมดหรือไม่?"
                 );
 
-
             if (!confirmDelete) {
-                return;
-            }
 
+                return;
+
+            }
 
             try {
 
-                console.log(
-                    "🗑️ กำลังลบประวัติ..."
-                );
-
-
                 const response =
                     await fetch(
-                        `${API}/api/history`, {
+                        `${API}/history`, {
 
                             method: "DELETE"
 
                         }
                     );
-
-
-                console.log(
-                    "Delete history status:",
-                    response.status
-                );
-
 
                 if (!response.ok) {
 
@@ -535,16 +442,7 @@
 
                 }
 
-
-                const data =
-                    await response.json();
-
-
-                console.log(
-                    "Delete response:",
-                    data
-                );
-
+                await response.json();
 
                 alert(
                     "🗑️ ลบประวัติทั้งหมดแล้ว"
@@ -556,7 +454,6 @@
                     "❌ Delete history error:",
                     error
                 );
-
 
                 alert(
                     "❌ ไม่สามารถลบประวัติได้\n\n" +
