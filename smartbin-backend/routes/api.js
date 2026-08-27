@@ -5,6 +5,7 @@ const router = express.Router();
 const controller =
     require("../controllers/binController");
 
+
 // ======================================================
 // RECYCLE DATA FROM ESP32
 // ======================================================
@@ -13,6 +14,7 @@ router.post(
     "/recycle",
     controller.receiveData
 );
+
 
 // ======================================================
 // DASHBOARD DATA
@@ -23,6 +25,7 @@ router.get(
     controller.getData
 );
 
+
 // ======================================================
 // RESET
 // ======================================================
@@ -31,6 +34,22 @@ router.post(
     "/reset",
     controller.reset
 );
+
+router.get(
+    "/check-reset",
+    controller.checkReset
+);
+
+
+// ======================================================
+// SELL
+// ======================================================
+
+router.post(
+    "/sell",
+    controller.sell
+);
+
 
 // ======================================================
 // PRICE
@@ -45,6 +64,7 @@ router.get(
     "/pet-price",
     controller.getPetPrice
 );
+
 
 // ======================================================
 // LID
@@ -62,11 +82,12 @@ router.get(
     controller.checkLid
 );
 
-// Dashboard triggers lid
+// Dashboard / YOLO triggers lid
 router.post(
     "/trigger-lid",
     controller.triggerLid
 );
+
 
 // ======================================================
 // IMAGE / YOLO
@@ -76,6 +97,7 @@ router.post(
     "/upload",
     controller.uploadImage
 );
+
 
 // ======================================================
 // HISTORY
@@ -91,8 +113,9 @@ router.delete(
     controller.deleteHistory
 );
 
+
 // ======================================================
-// TEST
+// TEST STATUS
 // ======================================================
 
 router.get(
@@ -100,13 +123,19 @@ router.get(
     (req, res) => {
 
         res.json({
+
             success: true,
+
             server: "SmartBin Backend",
+
             status: "online",
+
             time: new Date()
+
         });
 
     }
 );
+
 
 module.exports = router;

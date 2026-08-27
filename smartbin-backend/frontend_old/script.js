@@ -1,15 +1,26 @@
 // ======================================================
 // SMARTBIN DASHBOARD
+// LOCALHOST 3000
+// GOOGLE MAPS + GOOGLE PLACES
 // ======================================================
 
+
+// ======================================================
+// BACKEND
+// ======================================================
+
+// ใช้ Backend ตัวเดียวกับหน้าเว็บ
 const API_URL = "/api";
+
 
 // ======================================================
 // GLOBAL
 // ======================================================
 
 let map = null;
+
 let markers = [];
+
 let userMarker = null;
 
 
@@ -19,39 +30,55 @@ let userMarker = null;
 
 window.initGoogleMap = function() {
 
-    console.log("📍 Google Maps callback");
+    console.log(
+        "📍 Google Maps callback"
+    );
 
     const mapElement =
         document.getElementById("map");
 
     if (!mapElement) {
 
-        console.error("❌ ไม่พบ #map");
+        console.error(
+            "❌ ไม่พบ #map"
+        );
 
         return;
+
     }
 
     if (map) {
+
         return;
+
     }
 
     const defaultLocation = {
+
         lat: 13.7563,
+
         lng: 100.5018
+
     };
 
     try {
 
-        map = new google.maps.Map(
-            mapElement, {
-                center: defaultLocation,
-                zoom: 13,
+        map =
+            new google.maps.Map(
+                mapElement, {
 
-                mapTypeControl: true,
-                streetViewControl: true,
-                fullscreenControl: true
-            }
-        );
+                    center: defaultLocation,
+
+                    zoom: 13,
+
+                    mapTypeControl: true,
+
+                    streetViewControl: true,
+
+                    fullscreenControl: true
+
+                }
+            );
 
         console.log(
             "✅ Google Maps พร้อมใช้งาน"
@@ -70,7 +97,7 @@ window.initGoogleMap = function() {
 
 
 // ======================================================
-// LOAD DASHBOARD DATA
+// LOAD DATA
 // ======================================================
 
 async function loadData() {
@@ -103,10 +130,9 @@ async function loadData() {
             data
         );
 
-
-        // ==================================================
+        // ==============================================
         // COUNT
-        // ==================================================
+        // ==============================================
 
         const count =
             document.getElementById(
@@ -122,10 +148,9 @@ async function loadData() {
 
         }
 
-
-        // ==================================================
+        // ==============================================
         // WEIGHT
-        // ==================================================
+        // ==============================================
 
         const totalWeight =
             document.getElementById(
@@ -134,20 +159,16 @@ async function loadData() {
 
         if (totalWeight) {
 
-            const weightKg =
-                data.weightKg !== undefined ?
-                Number(data.weightKg) :
-                Number(data.weight || 0) / 1000;
-
             totalWeight.innerText =
-                weightKg.toFixed(2);
+                Number(
+                    data.weight || 0
+                ).toFixed(2);
 
         }
 
-
-        // ==================================================
+        // ==============================================
         // TOTAL VALUE
-        // ==================================================
+        // ==============================================
 
         const totalValue =
             document.getElementById(
@@ -163,10 +184,9 @@ async function loadData() {
 
         }
 
-
-        // ==================================================
+        // ==============================================
         // PRICE PER KG
-        // ==================================================
+        // ==============================================
 
         const petPrice =
             document.getElementById(
@@ -182,10 +202,9 @@ async function loadData() {
 
         }
 
-
-        // ==================================================
-        // SERVER ONLINE
-        // ==================================================
+        // ==============================================
+        // ONLINE
+        // ==============================================
 
         if (serverStatus) {
 
@@ -196,13 +215,6 @@ async function loadData() {
                 "green";
 
         }
-
-
-        // ==================================================
-        // UPDATE SELL BUTTON
-        // ==================================================
-
-        updateSellButton(data);
 
     } catch (error) {
 
@@ -227,264 +239,7 @@ async function loadData() {
 
 
 // ======================================================
-// UPDATE SELL BUTTON
-// ======================================================
-
-function updateSellButton(data) {
-
-    const button =
-        document.getElementById(
-            "sellButton"
-        );
-
-    if (!button) {
-        return;
-    }
-
-
-    const count =
-        Number(
-            data.count || 0
-        );
-
-    const weight =
-        Number(
-            data.weight || 0
-        );
-
-
-    // ==================================================
-    // มีขวด
-    // ==================================================
-
-    if (
-        count > 0 &&
-        weight > 0
-    ) {
-
-        button.disabled = false;
-
-        button.innerText =
-            "💰 ขาย";
-
-        button.style.opacity =
-            "1";
-
-        button.style.cursor =
-            "pointer";
-
-    }
-
-
-    // ==================================================
-    // ไม่มีขวด
-    // ==================================================
-    else {
-
-        button.disabled = true;
-
-        button.innerText =
-            "💰 ยังไม่มีขวด";
-
-        button.style.opacity =
-            "0.5";
-
-        button.style.cursor =
-            "not-allowed";
-
-    }
-
-}
-
-
-// ======================================================
-// SELL RECYCLE
-// ======================================================
-
-async function sellRecycle() {
-
-    const button =
-        document.getElementById(
-            "sellButton"
-        );
-
-
-    // ==================================================
-    // CONFIRM ก่อน
-    // ==================================================
-
-    const confirmSell =
-        confirm(
-            "ต้องการขายขวดทั้งหมดในถังตอนนี้ใช่หรือไม่?"
-        );
-
-
-    if (!confirmSell) {
-
-        // ไม่ต้องทำอะไร
-        // ไม่ต้องสร้างข้อมูลปลอม
-
-        console.log(
-            "❌ ยกเลิกการขาย"
-        );
-
-        return;
-
-    }
-
-
-    // ==================================================
-    // DISABLE BUTTON
-    // ==================================================
-
-    if (button) {
-
-        button.disabled = true;
-
-        button.innerText =
-            "⏳ กำลังขาย...";
-
-        button.style.opacity =
-            "0.6";
-
-        button.style.cursor =
-            "wait";
-
-    }
-
-
-    try {
-
-        // ==================================================
-        // SEND SELL REQUEST
-        // ==================================================
-
-        const response =
-            await fetch(
-                `${API_URL}/sell`, {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                }
-            );
-
-
-        const result =
-            await response.json();
-
-
-        console.log(
-            "💰 SELL RESULT:",
-            result
-        );
-
-
-        // ==================================================
-        // CHECK ERROR
-        // ==================================================
-
-        if (!response.ok ||
-            !result.success
-        ) {
-
-            throw new Error(
-                result.message ||
-                "ขายไม่สำเร็จ"
-            );
-
-        }
-
-
-        // ==================================================
-        // SELL SUCCESS
-        // ==================================================
-
-        const soldCount =
-            Number(
-                result.soldCount || 0
-            );
-
-        const soldWeightKg =
-            Number(
-                result.soldWeightKg || 0
-            );
-
-        const soldValue =
-            Number(
-                result.soldValue || 0
-            );
-
-
-        alert(
-
-            "✅ ขายสำเร็จ!\n\n" +
-
-            "🍾 จำนวนขวด: " +
-            soldCount +
-            " ขวด\n" +
-
-            "⚖️ น้ำหนัก: " +
-            soldWeightKg.toFixed(2) +
-            " กิโลกรัม\n" +
-
-            "💰 มูลค่า: " +
-            soldValue.toFixed(2) +
-            " บาท"
-
-        );
-
-
-        // ==================================================
-        // REFRESH DASHBOARD
-        // ==================================================
-
-        await loadData();
-
-
-        // ==================================================
-        // REFRESH HISTORY
-        // ==================================================
-
-        await loadHistory();
-
-
-        console.log(
-            "✅ Dashboard และ History อัปเดตแล้ว"
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "❌ Sell Error:",
-            error
-        );
-
-
-        alert(
-
-            "❌ ขายไม่สำเร็จ\n\n" +
-
-            error.message
-
-        );
-
-
-        // ==================================================
-        // ENABLE BUTTON กลับ
-        // ==================================================
-
-        await loadData();
-
-    }
-
-}
-
-
-// ======================================================
-// LOAD SALES HISTORY
+// LOAD HISTORY
 // ======================================================
 
 async function loadHistory() {
@@ -496,7 +251,6 @@ async function loadHistory() {
                 `${API_URL}/history`
             );
 
-
         if (!response.ok) {
 
             throw new Error(
@@ -505,28 +259,21 @@ async function loadHistory() {
 
         }
 
-
         const data =
             await response.json();
-
 
         const container =
             document.getElementById(
                 "history"
             );
 
-
         if (!container) {
+
             return;
+
         }
 
-
         container.innerHTML = "";
-
-
-        // ==================================================
-        // EMPTY
-        // ==================================================
 
         if (!Array.isArray(data) ||
             data.length === 0
@@ -546,68 +293,23 @@ async function loadHistory() {
 
         }
 
-
-        // ==================================================
-        // DISPLAY HISTORY
-        // ==================================================
-
         data
             .slice()
             .reverse()
             .forEach(
-                (item, index) => {
-
-
-                    // ==================================================
-                    // COUNT
-                    // ==================================================
-
-                    const count =
-                        Number(
-                            item.count || 0
-                        );
-
-
-                    // ==================================================
-                    // WEIGHT
-                    // ==================================================
+                item => {
 
                     const weight =
                         Number(
                             item.weight || 0
                         );
 
-
-                    const weightKg =
-                        item.weightKg !== undefined
-
-                        ?
-
-                        Number(
-                            item.weightKg
-                        )
-
-                    :
-
-                    weight / 1000;
-
-
-                    // ==================================================
-                    // PRICE
-                    // ==================================================
-
                     const price =
                         Number(
                             item.price || 0
                         );
 
-
-                    // ==================================================
-                    // TIME
-                    // ==================================================
-
                     let time = "";
-
 
                     if (item.time) {
 
@@ -620,74 +322,33 @@ async function loadHistory() {
 
                     }
 
-
-                    // ==================================================
-                    // CREATE CARD
-                    // ==================================================
-
                     const card =
                         document.createElement(
                             "div"
                         );
 
-
                     card.className =
                         "history-card";
-
 
                     card.innerHTML = `
 
                         <div>
 
-                            <div style="
-                                font-weight:bold;
-                                margin-bottom:6px;
-                            ">
+                            📦
+                            ${weight.toFixed(2)}
+                            kg
 
-                                🧾 การขายครั้งที่
-                                ${data.length - index}
-
-                            </div>
-
-
-                            <div>
-
-                                🍾
-                                จำนวน
-                                <b>
-                                    ${count}
-                                </b>
-                                ขวด
-
-                            </div>
-
-
-                            <div>
-
-                                ⚖️
-                                น้ำหนัก
-                                <b>
-                                    ${weightKg.toFixed(2)}
-                                </b>
-                                กก.
-
-                            </div>
-
+                            <br>
 
                             <small>
-
-                                🕒
                                 ${escapeHTML(time)}
-
                             </small>
 
                         </div>
 
-
                         <div style="
                             color:green;
                             font-weight:bold;
-                            font-size:18px;
                         ">
 
                             💰
@@ -698,14 +359,12 @@ async function loadHistory() {
 
                     `;
 
-
                     container.appendChild(
                         card
                     );
 
                 }
             );
-
 
     } catch (error) {
 
@@ -733,7 +392,6 @@ function escapeHTML(text) {
         return "";
 
     }
-
 
     return String(text)
 
@@ -779,9 +437,7 @@ function clearMarkers() {
         }
     );
 
-
     markers = [];
-
 
     if (userMarker) {
 
@@ -807,53 +463,35 @@ function calculateDistance(
 
     const R = 6371;
 
-
     const dLat =
         (lat2 - lat1) *
-        Math.PI /
-        180;
-
+        Math.PI / 180;
 
     const dLng =
         (lng2 - lng1) *
-        Math.PI /
-        180;
-
+        Math.PI / 180;
 
     const a =
 
-        Math.sin(
-            dLat / 2
-        ) *
-        Math.sin(
-            dLat / 2
-        )
+        Math.sin(dLat / 2) *
+        Math.sin(dLat / 2)
 
     +
 
     Math.cos(
-        lat1 *
-        Math.PI /
-        180
+        lat1 * Math.PI / 180
     )
 
     *
 
     Math.cos(
-        lat2 *
-        Math.PI /
-        180
+        lat2 * Math.PI / 180
     )
 
     *
 
-    Math.sin(
-            dLng / 2
-        ) *
-        Math.sin(
-            dLng / 2
-        );
-
+    Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
 
     const c =
         2 *
@@ -861,7 +499,6 @@ function calculateDistance(
             Math.sqrt(a),
             Math.sqrt(1 - a)
         );
-
 
     return R * c;
 
@@ -880,7 +517,6 @@ function getUserLocation() {
             reject
         ) => {
 
-
             if (!navigator.geolocation) {
 
                 reject(
@@ -892,7 +528,6 @@ function getUserLocation() {
                 return;
 
             }
-
 
             navigator.geolocation
                 .getCurrentPosition(
@@ -909,15 +544,11 @@ function getUserLocation() {
 
                     },
 
-
                     error => {
 
-                        reject(
-                            error
-                        );
+                        reject(error);
 
                     },
-
 
                     {
 
@@ -948,17 +579,14 @@ async function findNearby() {
             "shopList"
         );
 
-
     try {
 
-
-        // ==================================================
-        // CHECK GOOGLE MAPS
-        // ==================================================
+        // ==============================================
+        // CHECK GOOGLE
+        // ==============================================
 
         if (
-            typeof google ===
-            "undefined" ||
+            typeof google === "undefined" ||
             !google.maps
         ) {
 
@@ -968,13 +596,11 @@ async function findNearby() {
 
         }
 
-
         if (!map) {
 
             window.initGoogleMap();
 
         }
-
 
         if (!map) {
 
@@ -984,10 +610,9 @@ async function findNearby() {
 
         }
 
-
-        // ==================================================
+        // ==============================================
         // LOADING
-        // ==================================================
+        // ==============================================
 
         if (list) {
 
@@ -1004,13 +629,11 @@ async function findNearby() {
 
         }
 
-
-        // ==================================================
+        // ==============================================
         // GPS
-        // ==================================================
+        // ==============================================
 
         let position;
-
 
         try {
 
@@ -1023,7 +646,6 @@ async function findNearby() {
                 "⚠️ GPS ใช้งานไม่ได้ ใช้กรุงเทพแทน"
             );
 
-
             position = {
 
                 lat: 13.7563,
@@ -1034,21 +656,17 @@ async function findNearby() {
 
         }
 
-
         const userLat =
             position.lat;
-
 
         const userLng =
             position.lng;
 
-
         clearMarkers();
 
-
-        // ==================================================
+        // ==============================================
         // USER MARKER
-        // ==================================================
+        // ==============================================
 
         userMarker =
             new google.maps.Marker({
@@ -1067,10 +685,9 @@ async function findNearby() {
 
             });
 
-
-        // ==================================================
-        // CENTER MAP
-        // ==================================================
+        // ==============================================
+        // CENTER
+        // ==============================================
 
         map.setCenter({
 
@@ -1080,24 +697,18 @@ async function findNearby() {
 
         });
 
+        map.setZoom(14);
 
-        map.setZoom(
-            14
-        );
-
-
-        // ==================================================
+        // ==============================================
         // KEYWORD
-        // ==================================================
+        // ==============================================
 
         const input =
             document.getElementById(
                 "searchInput"
             );
 
-
         let keyword = "";
-
 
         if (input) {
 
@@ -1106,14 +717,12 @@ async function findNearby() {
 
         }
 
-
         if (!keyword) {
 
             keyword =
                 "ร้านรับซื้อของเก่า";
 
         }
-
 
         if (list) {
 
@@ -1135,20 +744,17 @@ async function findNearby() {
 
         }
 
-
-        // ==================================================
+        // ==============================================
         // GOOGLE PLACES
-        // ==================================================
+        // ==============================================
 
         const placesLibrary =
             await google.maps.importLibrary(
                 "places"
             );
 
-
         const Place =
             placesLibrary.Place;
-
 
         if (!Place) {
 
@@ -1158,10 +764,9 @@ async function findNearby() {
 
         }
 
-
-        // ==================================================
-        // SEARCH REQUEST
-        // ==================================================
+        // ==============================================
+        // SEARCH
+        // ==============================================
 
         const request = {
 
@@ -1201,29 +806,20 @@ async function findNearby() {
 
         };
 
-
         const result =
             await Place.searchByText(
                 request
             );
 
-
         const places =
             result &&
-            result.places
-
-            ?
-
-            result.places
-
-            :
-
+            result.places ?
+            result.places :
             [];
 
-
-        // ==================================================
+        // ==============================================
         // NO RESULT
-        // ==================================================
+        // ==============================================
 
         if (
             places.length === 0
@@ -1263,13 +859,11 @@ async function findNearby() {
 
         }
 
-
-        // ==================================================
-        // PREPARE SHOPS
-        // ==================================================
+        // ==============================================
+        // PREPARE
+        // ==============================================
 
         const shops = [];
-
 
         places.forEach(
             place => {
@@ -1280,11 +874,9 @@ async function findNearby() {
 
                 }
 
-
                 const lat =
 
-                    typeof
-                place.location.lat ===
+                    typeof place.location.lat ===
                     "function"
 
                 ?
@@ -1295,11 +887,9 @@ async function findNearby() {
 
                 place.location.lat;
 
-
                 const lng =
 
-                    typeof
-                place.location.lng ===
+                    typeof place.location.lng ===
                     "function"
 
                 ?
@@ -1310,7 +900,6 @@ async function findNearby() {
 
                 place.location.lng;
 
-
                 if (
                     lat === undefined ||
                     lng === undefined
@@ -1320,10 +909,8 @@ async function findNearby() {
 
                 }
 
-
                 let name =
                     "ร้านรับซื้อของเก่า";
-
 
                 if (
                     place.displayName
@@ -1348,54 +935,65 @@ async function findNearby() {
 
                 }
 
-
                 const address =
                     place.formattedAddress ||
                     "";
-
 
                 const phone =
                     place.nationalPhoneNumber ||
                     "";
 
-
                 const distance =
                     calculateDistance(
 
                         userLat,
+
                         userLng,
 
                         lat,
+
                         lng
 
                     );
 
-
                 shops.push({
 
-                    place: place,
+                    place:
 
-                    lat: lat,
+                        place,
 
-                    lng: lng,
+                    lat:
 
-                    name: name,
+                        lat,
 
-                    address: address,
+                    lng:
 
-                    phone: phone,
+                        lng,
 
-                    distance: distance
+                    name:
+
+                        name,
+
+                    address:
+
+                        address,
+
+                    phone:
+
+                        phone,
+
+                    distance:
+
+                        distance
 
                 });
 
             }
         );
 
-
-        // ==================================================
+        // ==============================================
         // SORT
-        // ==================================================
+        // ==============================================
 
         shops.sort(
             (a, b) =>
@@ -1403,13 +1001,8 @@ async function findNearby() {
             b.distance
         );
 
-
         const nearest =
-            shops.slice(
-                0,
-                20
-            );
-
+            shops.slice(0, 20);
 
         if (list) {
 
@@ -1417,14 +1010,12 @@ async function findNearby() {
 
         }
 
-
-        // ==================================================
+        // ==============================================
         // BOUNDS
-        // ==================================================
+        // ==============================================
 
         const bounds =
             new google.maps.LatLngBounds();
-
 
         bounds.extend({
 
@@ -1434,10 +1025,9 @@ async function findNearby() {
 
         });
 
-
-        // ==================================================
-        // CREATE SHOP
-        // ==================================================
+        // ==============================================
+        // CREATE
+        // ==============================================
 
         nearest.forEach(
                 shop => {
@@ -1449,11 +1039,6 @@ async function findNearby() {
                         lng: shop.lng
 
                     });
-
-
-                    // ==================================================
-                    // MARKER
-                    // ==================================================
 
                     const marker =
                         new google.maps.Marker({
@@ -1472,28 +1057,13 @@ async function findNearby() {
 
                         });
 
-
-                    markers.push(
-                        marker
-                    );
-
-
-                    // ==================================================
-                    // DIRECTION URL
-                    // ==================================================
+                    markers.push(marker);
 
                     const directionUrl =
 
-                        shop.place.googleMapsURI
-
-                        ||
+                        shop.place.googleMapsURI ||
 
                         `https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}`;
-
-
-                    // ==================================================
-                    // INFO WINDOW
-                    // ==================================================
 
                     const infoWindow =
                         new google.maps.InfoWindow({
@@ -1566,16 +1136,10 @@ async function findNearby() {
                                 </b>
 
                                 <a
-
                                     href="${directionUrl}"
-
                                     target="_blank"
-
                                     rel="noopener noreferrer"
-
-                                    class="direction-button"
-
-                                >
+                                    class="direction-button">
 
                                     🧭
                                     เปิดใน Google Maps
@@ -1587,11 +1151,6 @@ async function findNearby() {
                         `
 
                     });
-
-
-                // ==================================================
-                // MARKER CLICK
-                // ==================================================
 
                 marker.addListener(
                     "click",
@@ -1610,25 +1169,19 @@ async function findNearby() {
                     }
                 );
 
-
-                // ==================================================
-                // SHOP CARD
-                // ==================================================
-
                 if (!list) {
-                    return;
-                }
 
+                    return;
+
+                }
 
                 const card =
                     document.createElement(
                         "div"
                     );
 
-
                 card.className =
                     "shop-card";
-
 
                 card.innerHTML = `
 
@@ -1640,7 +1193,6 @@ async function findNearby() {
                         )}
 
                     </div>
-
 
                     ${
                         shop.address
@@ -1664,7 +1216,6 @@ async function findNearby() {
                         ""
                     }
 
-
                     ${
                         shop.phone
                             ?
@@ -1687,7 +1238,6 @@ async function findNearby() {
                         ""
                     }
 
-
                     <div class="shop-distance">
 
                         📏
@@ -1696,29 +1246,17 @@ async function findNearby() {
 
                     </div>
 
-
                     <a
-
                         href="${directionUrl}"
-
                         target="_blank"
-
                         rel="noopener noreferrer"
-
-                        class="shop-direction"
-
-                    >
+                        class="shop-direction">
 
                         🧭 นำทาง
 
                     </a>
 
                 `;
-
-
-                // ==================================================
-                // CARD CLICK
-                // ==================================================
 
                 card.addEventListener(
                     "click",
@@ -1734,7 +1272,6 @@ async function findNearby() {
 
                         }
 
-
                         map.setCenter({
 
                             lat:
@@ -1745,11 +1282,7 @@ async function findNearby() {
 
                         });
 
-
-                        map.setZoom(
-                            17
-                        );
-
+                        map.setZoom(17);
 
                         google.maps.event.trigger(
                             marker,
@@ -1759,7 +1292,6 @@ async function findNearby() {
                     }
                 );
 
-
                 list.appendChild(
                     card
                 );
@@ -1767,19 +1299,12 @@ async function findNearby() {
             }
         );
 
-
-        // ==================================================
-        // FIT MAP
-        // ==================================================
-
         if (
             nearest.length > 0
         ) {
 
             map.fitBounds(
-
                 bounds,
-
                 {
 
                     top:
@@ -1795,16 +1320,13 @@ async function findNearby() {
                         50
 
                 }
-
             );
 
         }
 
-
         console.log(
             `✅ พบ ${nearest.length} ร้าน`
         );
-
 
     } catch (error) {
 
@@ -1812,7 +1334,6 @@ async function findNearby() {
             "❌ Search error:",
             error
         );
-
 
         if (list) {
 
@@ -1857,7 +1378,6 @@ document.addEventListener(
                 "searchInput"
             );
 
-
         if (input) {
 
             input.addEventListener(
@@ -1894,35 +1414,17 @@ document.addEventListener(
             "🚀 SmartBin Dashboard Started"
         );
 
-
-        // ==================================================
-        // LOAD DASHBOARD
-        // ==================================================
-
         loadData();
-
-
-        // ==================================================
-        // LOAD SALES HISTORY
-        // ==================================================
 
         loadHistory();
 
-
-        // ==================================================
-        // UPDATE DASHBOARD EVERY 3 SEC
-        // ==================================================
-
+        // Update Dashboard
         setInterval(
             loadData,
             3000
         );
 
-
-        // ==================================================
-        // UPDATE HISTORY EVERY 5 SEC
-        // ==================================================
-
+        // Update History
         setInterval(
             loadHistory,
             5000

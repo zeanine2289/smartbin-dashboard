@@ -1,0 +1,231 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    background: linear-gradient( 135deg, #eef7ff, #f7fbff);
+    color: #1f2937;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    margin: auto;
+    padding: 30px;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.header h1 {
+    font-size: 30px;
+}
+
+.header p {
+    margin-top: 5px;
+    color: #6b7280;
+}
+
+.back-btn {
+    text-decoration: none;
+    background: #0ea5e9;
+    color: white;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: .2s;
+}
+
+.back-btn:hover {
+    background: #0284c7;
+}
+
+
+/* =========================
+   CARD
+========================= */
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 18px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .07);
+}
+
+.card h2 {
+    margin-bottom: 10px;
+}
+
+.description {
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 18px;
+}
+
+
+/* =========================
+   PRICE
+========================= */
+
+.price-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.price-box input {
+    width: 220px;
+    padding: 13px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 18px;
+}
+
+.price-box span {
+    font-weight: 600;
+}
+
+.primary-btn {
+    margin-top: 15px;
+    border: none;
+    background: #0ea5e9;
+    color: white;
+    padding: 12px 22px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.primary-btn:hover {
+    background: #0284c7;
+}
+
+.current-price {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f0f9ff;
+    border-radius: 10px;
+}
+
+.current-price strong {
+    color: #0284c7;
+    font-size: 22px;
+    margin-left: 8px;
+}
+
+
+/* =========================
+   WARNING
+========================= */
+
+.warning-card {
+    border-left: 5px solid #f59e0b;
+}
+
+.warning-btn {
+    border: none;
+    background: #f59e0b;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.warning-btn:hover {
+    background: #d97706;
+}
+
+
+/* =========================
+   DELETE
+========================= */
+
+.danger-card {
+    border-left: 5px solid #ef4444;
+}
+
+.danger-btn {
+    border: none;
+    background: #ef4444;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.danger-btn:hover {
+    background: #dc2626;
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+.status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.online {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.offline {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+    .container {
+        padding: 15px;
+    }
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    .header h1 {
+        font-size: 25px;
+    }
+    .price-box {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .price-box input {
+        width: 100%;
+    }
+}

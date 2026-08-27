@@ -1,0 +1,17 @@
+{
+    "bottleCount": 0,
+    "totalWeight": 0,
+    "pricePerKg": 8,
+    "transactions": [
+        {
+            "id": 1787845576544,
+            "count": 2,
+            "weight": 0.031299999999999994,
+            "weightKg": 0.031299999999999994,
+            "weightGram": 31.299999999999994,
+            "pricePerKg": 8,
+            "price": 0.25039999999999996,
+            "time": "2026-08-27T15:46:16.544Z"
+        }
+    ]
+}

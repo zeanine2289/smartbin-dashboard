@@ -24,15 +24,21 @@ function getLocalIP() {
                 net.family === "IPv4" &&
                 !net.internal
             ) {
+
                 return net.address;
+
             }
+
         }
+
     }
 
     return "127.0.0.1";
+
 }
 
 const LOCAL_IP = getLocalIP();
+
 
 // ======================================================
 // MIDDLEWARE
@@ -40,87 +46,137 @@ const LOCAL_IP = getLocalIP();
 
 app.use(cors());
 
-app.use(express.json({
-    limit: "20mb"
-}));
+app.use(
+    express.json({
+        limit: "20mb"
+    })
+);
 
-app.use(express.urlencoded({
-    extended: true,
-    limit: "20mb"
-}));
+app.use(
+    express.urlencoded({
+        extended: true,
+        limit: "20mb"
+    })
+);
+
 
 // ======================================================
 // API ROUTES
 // ======================================================
 
-const apiRoutes = require("./routes/api");
+const apiRoutes =
+    require("./routes/api");
 
-app.use("/api", apiRoutes);
+app.use(
+    "/api",
+    apiRoutes
+);
+
 
 // ======================================================
 // FRONTEND
 // ======================================================
+//
+// Backend อยู่:
+//
+// smartbin-backend
+//
+// เว็บใหม่อยู่:
+//
+// wep app
+// └── frontend
+//
+// ดังนั้นต้องใช้ ..
+//
 
 const frontendPath =
-    path.join(__dirname, "frontend");
+    path.join(
+        __dirname,
+        "..",
+        "frontend"
+    );
+
+console.log(
+    "🌐 Frontend Path:",
+    frontendPath
+);
+
+
+// ======================================================
+// SERVE FRONTEND
+// ======================================================
 
 app.use(
-    express.static(frontendPath)
+    express.static(
+        frontendPath
+    )
 );
+
 
 // ======================================================
 // ROOT
 // ======================================================
 
-app.get("/", (req, res) => {
+app.get(
+    "/",
+    (req, res) => {
 
-    res.sendFile(
-        path.join(
-            frontendPath,
-            "index.html"
-        )
-    );
+        res.sendFile(
+            path.join(
+                frontendPath,
+                "index.html"
+            )
+        );
 
-});
+    }
+);
+
 
 // ======================================================
 // 404 API
 // ======================================================
 
-app.use("/api", (req, res) => {
+app.use(
+    "/api",
+    (req, res) => {
 
-    res.status(404).json({
+        res.status(404).json({
 
-        success: false,
+            success: false,
 
-        message: "API endpoint not found"
+            message: "API endpoint not found"
 
-    });
+        });
 
-});
+    }
+);
+
 
 // ======================================================
 // ERROR HANDLER
 // ======================================================
 
-app.use((err, req, res, next) => {
+app.use(
+    (err, req, res, next) => {
 
-    console.error(
-        "❌ SERVER ERROR:",
-        err
-    );
+        console.error(
+            "❌ SERVER ERROR:",
+            err
+        );
 
-    res.status(500).json({
+        res.status(500).json({
 
-        success: false,
+            success: false,
 
-        message: "Internal server error",
+            message: "Internal server error",
 
-        error: err.message
+            error: err.message
 
-    });
+        });
 
-});
+    }
+);
+
 
 // ======================================================
 // START SERVER
@@ -163,6 +219,10 @@ app.listen(
 
         console.log(
             `📦 History: http://${LOCAL_IP}:${PORT}/api/history`
+        );
+
+        console.log(
+            `🌐 Frontend: ${frontendPath}`
         );
 
         console.log(

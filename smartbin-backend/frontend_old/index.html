@@ -120,54 +120,11 @@
             color: green;
             font-weight: 600;
         }
-        /* ==================================================
-           SELL SECTION
-        ================================================== */
-        
-        .sell-section {
-            margin-top: 20px;
-            text-align: center;
-        }
-        
-        .sell-button {
-            width: 100%;
-            padding: 16px 20px;
-            border: none;
-            border-radius: 12px;
-            background: #16a34a;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: .2s;
-        }
-        
-        .sell-button:hover {
-            transform: translateY(-2px);
-            opacity: .9;
-        }
-        
-        .sell-button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-            opacity: 1;
-        }
-        
-        .sell-info {
-            margin-top: 8px;
-            color: #666;
-            font-size: 14px;
-        }
     </style>
 
 </head>
 
 <body>
-
-    <!-- ==================================================
-         HEADER
-    ================================================== -->
 
     <header class="app-header">
 
@@ -186,14 +143,18 @@
         <div class="header-buttons">
 
             <button onclick="loadData()" class="refresh-btn">
-                🔄 รีเฟรช
-            </button>
+
+            🔄 รีเฟรช
+
+        </button>
 
             <a href="admin.html">
 
                 <button class="admin-btn">
-                    ⚙️ Admin
-                </button>
+
+                ⚙️ Admin
+
+            </button>
 
             </a>
 
@@ -201,22 +162,11 @@
 
     </header>
 
-
-    <!-- ==================================================
-         MAIN
-    ================================================== -->
-
     <main class="container">
 
-
-        <!-- ==================================================
-             CURRENT RECYCLE
-        ================================================== -->
+        <!-- DASHBOARD -->
 
         <section class="cards">
-
-
-            <!-- จำนวนขวด -->
 
             <div class="card">
 
@@ -225,7 +175,9 @@
                 </div>
 
                 <div id="count" class="value">
+
                     0
+
                 </div>
 
                 <div class="unit">
@@ -234,9 +186,6 @@
 
             </div>
 
-
-            <!-- น้ำหนัก -->
-
             <div class="card">
 
                 <div class="label">
@@ -244,7 +193,9 @@
                 </div>
 
                 <div id="totalWeight" class="value">
+
                     0.00
+
                 </div>
 
                 <div class="unit">
@@ -253,9 +204,6 @@
 
             </div>
 
-
-            <!-- มูลค่า -->
-
             <div class="card">
 
                 <div class="label">
@@ -263,7 +211,9 @@
                 </div>
 
                 <div id="totalValue" class="value">
+
                     0.00
+
                 </div>
 
                 <div class="unit">
@@ -272,9 +222,6 @@
 
             </div>
 
-
-            <!-- ราคาต่อกิโล -->
-
             <div class="card">
 
                 <div class="label">
@@ -282,7 +229,9 @@
                 </div>
 
                 <div id="petPrice" class="value">
+
                     0.00
+
                 </div>
 
                 <div class="unit">
@@ -293,27 +242,7 @@
 
         </section>
 
-
-        <!-- ==================================================
-             SELL BUTTON
-        ================================================== -->
-
-        <section class="card sell-section">
-
-            <button id="sellButton" class="sell-button" onclick="sellRecycle()" disabled>
-                💰 ขายขวด
-            </button>
-
-            <div class="sell-info">
-                กดปุ่มเมื่อคุณต้องการขายขวดที่สะสมอยู่ในถัง
-            </div>
-
-        </section>
-
-
-        <!-- ==================================================
-             HISTORY
-        ================================================== -->
+        <!-- HISTORY -->
 
         <section class="card history-card">
 
@@ -326,13 +255,12 @@
                     </h2>
 
                     <p>
-                        รายการขวดพลาสติกที่ขายแล้ว
+                        รายการรับซื้อขวดพลาสติก
                     </p>
 
                 </div>
 
             </div>
-
 
             <div id="history" class="history-container">
 
@@ -346,10 +274,7 @@
 
         </section>
 
-
-        <!-- ==================================================
-             MAP
-        ================================================== -->
+        <!-- GOOGLE MAP -->
 
         <section class="card map-card">
 
@@ -369,20 +294,19 @@
 
             </div>
 
-
             <div class="map-search">
 
                 <input type="text" id="searchInput" placeholder="🔍 เช่น ร้านรับซื้อของเก่า">
 
                 <button onclick="findNearby()">
-                    🔍 ค้นหา
-                </button>
+
+                🔍 ค้นหา
+
+            </button>
 
             </div>
 
-
             <div id="map"></div>
-
 
             <div id="shopList" class="shop-list">
 
@@ -396,10 +320,7 @@
 
         </section>
 
-
-        <!-- ==================================================
-             SYSTEM STATUS
-        ================================================== -->
+        <!-- SYSTEM STATUS -->
 
         <section class="card status-card">
 
@@ -407,31 +328,31 @@
                 🟢 สถานะระบบ
             </h2>
 
-
             <div class="status-row">
 
                 <span>
-                    Backend
-                </span>
+                Backend
+            </span>
 
                 <span id="serverStatus" class="status-online">
-                    กำลังตรวจสอบ...
-                </span>
+
+                กำลังตรวจสอบ...
+
+            </span>
 
             </div>
 
-
             <div class="status-row">
 
                 <span>
-                    SmartBin
-                </span>
+                SmartBin
+            </span>
 
                 <span class="status-online">
 
-                    พร้อมใช้งาน
+                พร้อมใช้งาน
 
-                </span>
+            </span>
 
             </div>
 
@@ -439,17 +360,9 @@
 
     </main>
 
-
-    <!-- ==================================================
-         JAVASCRIPT
-    ================================================== -->
-
     <script src="./script.js"></script>
 
-
-    <!-- ==================================================
-         GOOGLE MAPS
-    ================================================== -->
+    <!-- Google Maps -->
 
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7o7l0n0-h4lFqKO3xWNCGDxxSROFKfrY&libraries=places&loading=async&callback=initGoogleMap" async defer>
     </script>

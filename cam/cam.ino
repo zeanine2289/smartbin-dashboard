@@ -10,26 +10,23 @@ const char* ssid = "Siraphat_2.4G";
 const char* password = "siraphat6323";
 
 // ======================================================
-// YOLO API
+// SERVER
 // ======================================================
 
 const char* YOLO_URL =
   "http://192.168.1.178:8000/detect";
 
-// ======================================================
-// SMARTBIN BACKEND
-// ======================================================
-
 const char* BACKEND_URL =
   "http://192.168.1.178:3000";
 
 // ======================================================
-// AI THINKER ESP32-CAM PIN
+// AI THINKER ESP32-CAM
 // ======================================================
 
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM      0
+
 #define SIOD_GPIO_NUM     26
 #define SIOC_GPIO_NUM     27
 
@@ -50,19 +47,41 @@ const char* BACKEND_URL =
 // SETTINGS
 // ======================================================
 
-// ตรวจจับทุก 3 วินาที
 const unsigned long DETECTION_INTERVAL = 3000;
+const unsigned long LID_COOLDOWN = 10000;
 
-// ป้องกันเปิดฝาซ้ำ
-const unsigned long LID_COOLDOWN = 5000;
-
-// เวลา
 unsigned long lastDetection = 0;
 unsigned long lastLidCommand = 0;
 
 
 // ======================================================
-// CAMERA
+// CAMERA POWER RESET
+// ======================================================
+
+void cameraPowerReset() {
+
+  Serial.println();
+  Serial.println("Camera power reset...");
+
+  pinMode(PWDN_GPIO_NUM, OUTPUT);
+
+  // ปิดกล้อง
+  digitalWrite(PWDN_GPIO_NUM, HIGH);
+
+  delay(200);
+
+  // เปิดกล้อง
+  digitalWrite(PWDN_GPIO_NUM, LOW);
+
+  // รอ sensor พร้อม
+  delay(1000);
+
+  Serial.println("Camera power reset complete");
+}
+
+
+// ======================================================
+// CAMERA INITIALIZE
 // ======================================================
 
 bool initCamera() {
@@ -72,12 +91,24 @@ bool initCamera() {
   Serial.println("          CAMERA INITIALIZE");
   Serial.println("======================================");
 
-  Serial.println("Creating camera config...");
+  // ----------------------------------------------------
+  // Power reset
+  // ----------------------------------------------------
+
+  cameraPowerReset();
+
+  // ----------------------------------------------------
+  // CAMERA CONFIG
+  // ----------------------------------------------------
 
   camera_config_t config;
 
+  memset(&config, 0, sizeof(config));
+
   config.ledc_channel = LEDC_CHANNEL_0;
-  config.ledc_timer = LEDC_TIMER_0;
+  config.ledc_timer   = LEDC_TIMER_0;
+
+  // DATA
 
   config.pin_d0 = Y2_GPIO_NUM;
   config.pin_d1 = Y3_GPIO_NUM;
@@ -88,22 +119,35 @@ bool initCamera() {
   config.pin_d6 = Y8_GPIO_NUM;
   config.pin_d7 = Y9_GPIO_NUM;
 
+  // CLOCK
+
   config.pin_xclk = XCLK_GPIO_NUM;
   config.pin_pclk = PCLK_GPIO_NUM;
+
   config.pin_vsync = VSYNC_GPIO_NUM;
-  config.pin_href = HREF_GPIO_NUM;
+  config.pin_href  = HREF_GPIO_NUM;
 
-  config.pin_sscb_sda = SIOD_GPIO_NUM;
-  config.pin_sscb_scl = SIOC_GPIO_NUM;
+  // SCCB
 
-  config.pin_pwdn = PWDN_GPIO_NUM;
+  config.pin_sccb_sda = SIOD_GPIO_NUM;
+  config.pin_sccb_scl = SIOC_GPIO_NUM;
+
+  // POWER
+
+  config.pin_pwdn  = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
+
+  // CAMERA CLOCK
 
   config.xclk_freq_hz = 20000000;
 
+  // JPEG
+
   config.pixel_format = PIXFORMAT_JPEG;
 
-  config.frame_size = FRAMESIZE_VGA;
+  // QVGA
+
+  config.frame_size = FRAMESIZE_QVGA;
 
   config.jpeg_quality = 12;
 
@@ -111,22 +155,142 @@ bool initCamera() {
 
   Serial.println("Camera config OK");
 
-  Serial.println("Calling esp_camera_init()...");
+  // ----------------------------------------------------
+  // TRY INITIALIZE
+  // ----------------------------------------------------
 
-  esp_err_t err = esp_camera_init(&config);
+  for (int attempt = 1; attempt <= 3; attempt++) {
 
-  if (err != ESP_OK) {
+    Serial.println();
+    Serial.print("Camera initialization attempt ");
+    Serial.print(attempt);
+    Serial.println("/3");
 
-    Serial.print("Camera init FAILED: 0x");
+    esp_err_t err = esp_camera_init(&config);
 
-    Serial.println(err, HEX);
+    if (err == ESP_OK) {
 
-    return false;
+      Serial.println();
+      Serial.println("======================================");
+      Serial.println("       CAMERA INIT SUCCESS");
+      Serial.println("======================================");
+
+      sensor_t* sensor = esp_camera_sensor_get();
+
+      if (sensor == NULL) {
+
+        Serial.println("ERROR: Camera sensor NULL");
+
+        esp_camera_deinit();
+
+        delay(500);
+
+        continue;
+      }
+
+      Serial.println("Camera sensor detected!");
+
+      // ------------------------------------------------
+      // CAPTURE TEST
+      // ------------------------------------------------
+
+      delay(500);
+
+      Serial.println("Testing camera capture...");
+
+      camera_fb_t* fb =
+        esp_camera_fb_get();
+
+      if (fb == NULL) {
+
+        Serial.println(
+          "Camera capture FAILED"
+        );
+
+        esp_camera_deinit();
+
+        delay(500);
+
+        cameraPowerReset();
+
+        continue;
+      }
+
+      Serial.println(
+        "Camera capture SUCCESS!"
+      );
+
+      Serial.print(
+        "Image size: "
+      );
+
+      Serial.print(
+        fb->len
+      );
+
+      Serial.println(
+        " bytes"
+      );
+
+      Serial.print(
+        "Width: "
+      );
+
+      Serial.println(
+        fb->width
+      );
+
+      Serial.print(
+        "Height: "
+      );
+
+      Serial.println(
+        fb->height
+      );
+
+      esp_camera_fb_return(fb);
+
+      Serial.println();
+      Serial.println("CAMERA READY");
+
+      return true;
+    }
+
+    // --------------------------------------------------
+    // FAILED
+    // --------------------------------------------------
+
+    Serial.print(
+      "Camera init FAILED: 0x"
+    );
+
+    Serial.println(
+      err,
+      HEX
+    );
+
+    if (attempt < 3) {
+
+      Serial.println(
+        "Retrying camera..."
+      );
+
+      esp_camera_deinit();
+
+      delay(500);
+
+      cameraPowerReset();
+
+      delay(500);
+    }
   }
 
-  Serial.println("Camera init SUCCESS");
+  Serial.println();
+  Serial.println("======================================");
+  Serial.println("       CAMERA INIT FAILED");
+  Serial.println("======================================");
 
-  return true;
+  return false;
 }
 
 
@@ -147,9 +311,13 @@ bool connectWiFi() {
 
   delay(500);
 
-  Serial.print("Connecting to: ");
+  Serial.print(
+    "Connecting to: "
+  );
 
-  Serial.println(ssid);
+  Serial.println(
+    ssid
+  );
 
   WiFi.begin(
     ssid,
@@ -211,6 +379,8 @@ bool connectWiFi() {
     WiFi.subnetMask()
   );
 
+  Serial.println();
+
   Serial.print(
     "YOLO URL: "
   );
@@ -232,13 +402,14 @@ bool connectWiFi() {
 
 
 // ======================================================
-// CHECK WIFI
+// ENSURE WIFI
 // ======================================================
 
 bool ensureWiFi() {
 
   if (
-    WiFi.status() == WL_CONNECTED
+    WiFi.status() ==
+    WL_CONNECTED
   ) {
 
     return true;
@@ -260,12 +431,12 @@ bool ensureWiFi() {
     password
   );
 
-  unsigned long startTime =
+  unsigned long start =
     millis();
 
   while (
     WiFi.status() != WL_CONNECTED &&
-    millis() - startTime < 10000
+    millis() - start < 10000
   ) {
 
     delay(500);
@@ -276,7 +447,8 @@ bool ensureWiFi() {
   Serial.println();
 
   if (
-    WiFi.status() == WL_CONNECTED
+    WiFi.status() ==
+    WL_CONNECTED
   ) {
 
     Serial.println(
@@ -303,47 +475,20 @@ bool ensureWiFi() {
 
 
 // ======================================================
-// SEND OPEN LID TO BACKEND
+// TEST YOLO
 // ======================================================
 
-void sendOpenLidCommand() {
-
-  // ====================================================
-  // COOLDOWN
-  // ====================================================
-
-  if (
-    millis() - lastLidCommand
-    < LID_COOLDOWN
-  ) {
-
-    Serial.println(
-      "Lid command cooldown..."
-    );
-
-    return;
-  }
-
+void testYOLO() {
 
   Serial.println();
   Serial.println("======================================");
-  Serial.println("       BOTTLE DETECTED");
+  Serial.println("            TEST YOLO API");
   Serial.println("======================================");
-
-  Serial.println(
-    "Sending OPEN command to Backend..."
-  );
-
-
-  // ====================================================
-  // HTTP
-  // ====================================================
 
   HTTPClient http;
 
   String url =
-    String(BACKEND_URL)
-    + "/api/trigger-lid";
+    "http://192.168.1.178:8000/";
 
   Serial.print(
     "URL: "
@@ -353,7 +498,171 @@ void sendOpenLidCommand() {
     url
   );
 
-  http.begin(url);
+  if (!http.begin(url)) {
+
+    Serial.println(
+      "YOLO http.begin FAILED"
+    );
+
+    return;
+  }
+
+  http.setTimeout(5000);
+
+  int code =
+    http.GET();
+
+  Serial.print(
+    "YOLO HTTP Code: "
+  );
+
+  Serial.println(
+    code
+  );
+
+  if (code > 0) {
+
+    Serial.print(
+      "YOLO Response: "
+    );
+
+    Serial.println(
+      http.getString()
+    );
+
+  } else {
+
+    Serial.print(
+      "YOLO Error: "
+    );
+
+    Serial.println(
+      http.errorToString(code)
+    );
+  }
+
+  http.end();
+}
+
+
+// ======================================================
+// TEST BACKEND
+// ======================================================
+
+void testBackend() {
+
+  Serial.println();
+  Serial.println("======================================");
+  Serial.println("           TEST BACKEND API");
+  Serial.println("======================================");
+
+  HTTPClient http;
+
+  String url =
+    String(BACKEND_URL) +
+    "/api/data";
+
+  Serial.print(
+    "URL: "
+  );
+
+  Serial.println(
+    url
+  );
+
+  if (!http.begin(url)) {
+
+    Serial.println(
+      "Backend http.begin FAILED"
+    );
+
+    return;
+  }
+
+  http.setTimeout(5000);
+
+  int code =
+    http.GET();
+
+  Serial.print(
+    "Backend HTTP Code: "
+  );
+
+  Serial.println(
+    code
+  );
+
+  if (code > 0) {
+
+    Serial.print(
+      "Backend Response: "
+    );
+
+    Serial.println(
+      http.getString()
+    );
+
+  } else {
+
+    Serial.print(
+      "Backend Error: "
+    );
+
+    Serial.println(
+      http.errorToString(code)
+    );
+  }
+
+  http.end();
+}
+
+
+// ======================================================
+// OPEN LID
+// ======================================================
+
+void sendOpenLidCommand() {
+
+  if (
+    millis() - lastLidCommand <
+    LID_COOLDOWN
+  ) {
+
+    Serial.println();
+    Serial.println(
+      "Lid cooldown active."
+    );
+
+    return;
+  }
+
+  Serial.println();
+  Serial.println("======================================");
+  Serial.println("          BOTTLE DETECTED!");
+  Serial.println("======================================");
+
+  HTTPClient http;
+
+  String url =
+    String(BACKEND_URL) +
+    "/api/trigger-lid";
+
+  Serial.print(
+    "URL: "
+  );
+
+  Serial.println(
+    url
+  );
+
+  if (!http.begin(url)) {
+
+    Serial.println(
+      "Backend http.begin FAILED"
+    );
+
+    return;
+  }
 
   http.setTimeout(5000);
 
@@ -361,11 +670,6 @@ void sendOpenLidCommand() {
     "Content-Type",
     "application/json"
   );
-
-
-  // ====================================================
-  // JSON
-  // ====================================================
 
   String json =
     "{\"action\":\"open\"}";
@@ -378,33 +682,18 @@ void sendOpenLidCommand() {
     json
   );
 
-
-  // ====================================================
-  // POST
-  // ====================================================
-
-  int httpCode =
-    http.POST(
-      json
-    );
-
-
-  // ====================================================
-  // RESULT
-  // ====================================================
+  int code =
+    http.POST(json);
 
   Serial.print(
     "Backend HTTP Code: "
   );
 
   Serial.println(
-    httpCode
+    code
   );
 
-
-  if (
-    httpCode > 0
-  ) {
+  if (code > 0) {
 
     String response =
       http.getString();
@@ -417,10 +706,9 @@ void sendOpenLidCommand() {
       response
     );
 
-
     if (
-      httpCode >= 200 &&
-      httpCode < 300
+      code >= 200 &&
+      code < 300
     ) {
 
       Serial.println(
@@ -438,13 +726,11 @@ void sendOpenLidCommand() {
     );
 
     Serial.print(
-      "HTTP Error: "
+      "Error: "
     );
 
     Serial.println(
-      http.errorToString(
-        httpCode
-      )
+      http.errorToString(code)
     );
   }
 
@@ -458,25 +744,13 @@ void sendOpenLidCommand() {
 
 void detectBottle() {
 
-  // ====================================================
-  // CHECK WIFI
-  // ====================================================
-
-  if (
-    !ensureWiFi()
-  ) {
+  if (!ensureWiFi()) {
 
     return;
   }
 
-
-  // ====================================================
-  // CAMERA CAPTURE
-  // ====================================================
-
   Serial.println();
   Serial.println("--------------------------------------");
-
   Serial.println(
     "Capturing image..."
   );
@@ -484,8 +758,7 @@ void detectBottle() {
   camera_fb_t* fb =
     esp_camera_fb_get();
 
-
-  if (!fb) {
+  if (fb == NULL) {
 
     Serial.println(
       "ERROR: Camera capture failed"
@@ -493,7 +766,6 @@ void detectBottle() {
 
     return;
   }
-
 
   Serial.print(
     "Captured: "
@@ -507,10 +779,9 @@ void detectBottle() {
     " bytes"
   );
 
-
-  // ====================================================
-  // CREATE HTTP
-  // ====================================================
+  // ----------------------------------------------------
+  // HTTP
+  // ----------------------------------------------------
 
   HTTPClient http;
 
@@ -518,68 +789,62 @@ void detectBottle() {
     "Connecting to YOLO API..."
   );
 
-  http.begin(
-    YOLO_URL
-  );
+  if (!http.begin(YOLO_URL)) {
 
-  http.setTimeout(
-    15000
-  );
+    Serial.println(
+      "ERROR: YOLO http.begin failed"
+    );
 
+    esp_camera_fb_return(fb);
 
-  // ====================================================
+    return;
+  }
+
+  http.setTimeout(15000);
+
+  // ----------------------------------------------------
   // MULTIPART
-  // ====================================================
+  // ----------------------------------------------------
 
   String boundary =
     "----ESP32CAMBoundary";
 
-
   String contentType =
-    "multipart/form-data; boundary="
-    + boundary;
-
+    "multipart/form-data; boundary=" +
+    boundary;
 
   http.addHeader(
     "Content-Type",
     contentType
   );
 
-
-  // ====================================================
+  // ----------------------------------------------------
   // HEADER
-  // ====================================================
+  // ----------------------------------------------------
 
   String head =
-    "--"
-    + boundary
-    + "\r\n"
+    "--" +
+    boundary +
+    "\r\n"
     "Content-Disposition: form-data; "
     "name=\"file\"; "
     "filename=\"image.jpg\"\r\n"
     "Content-Type: image/jpeg\r\n"
     "\r\n";
 
-
-  // ====================================================
+  // ----------------------------------------------------
   // TAIL
-  // ====================================================
+  // ----------------------------------------------------
 
   String tail =
-    "\r\n--"
-    + boundary
-    + "--\r\n";
-
-
-  // ====================================================
-  // TOTAL LENGTH
-  // ====================================================
+    "\r\n--" +
+    boundary +
+    "--\r\n";
 
   size_t totalLength =
-    head.length()
-    + fb->len
-    + tail.length();
-
+    head.length() +
+    fb->len +
+    tail.length();
 
   Serial.print(
     "Payload: "
@@ -593,38 +858,31 @@ void detectBottle() {
     " bytes"
   );
 
-
-  // ====================================================
-  // ALLOCATE
-  // ====================================================
+  // ----------------------------------------------------
+  // MEMORY
+  // ----------------------------------------------------
 
   uint8_t* payload =
     (uint8_t*)malloc(
       totalLength
     );
 
-
-  if (
-    payload == nullptr
-  ) {
+  if (payload == NULL) {
 
     Serial.println(
       "ERROR: malloc failed"
     );
 
-    esp_camera_fb_return(
-      fb
-    );
+    esp_camera_fb_return(fb);
 
     http.end();
 
     return;
   }
 
-
-  // ====================================================
-  // COPY HEADER
-  // ====================================================
+  // ----------------------------------------------------
+  // COPY
+  // ----------------------------------------------------
 
   memcpy(
     payload,
@@ -632,41 +890,27 @@ void detectBottle() {
     head.length()
   );
 
-
-  // ====================================================
-  // COPY IMAGE
-  // ====================================================
-
   memcpy(
     payload + head.length(),
     fb->buf,
     fb->len
   );
 
-
-  // ====================================================
-  // COPY TAIL
-  // ====================================================
-
   memcpy(
-    payload
-    + head.length()
-    + fb->len,
-
+    payload +
+    head.length() +
+    fb->len,
     tail.c_str(),
-
     tail.length()
   );
 
-
-  // ====================================================
+  // ----------------------------------------------------
   // SEND
-  // ====================================================
+  // ----------------------------------------------------
 
   Serial.println(
     "Sending image to YOLO..."
   );
-
 
   int httpCode =
     http.POST(
@@ -674,44 +918,30 @@ void detectBottle() {
       totalLength
     );
 
+  // ----------------------------------------------------
+  // FREE
+  // ----------------------------------------------------
 
-  // ====================================================
-  // FREE MEMORY
-  // ====================================================
+  free(payload);
 
-  free(
-    payload
-  );
+  esp_camera_fb_return(fb);
 
-  esp_camera_fb_return(
-    fb
-  );
-
-
-  // ====================================================
-  // HTTP CODE
-  // ====================================================
+  // ----------------------------------------------------
+  // RESULT
+  // ----------------------------------------------------
 
   Serial.print(
-    "HTTP Code: "
+    "YOLO HTTP Code: "
   );
 
   Serial.println(
     httpCode
   );
 
-
-  // ====================================================
-  // SUCCESS
-  // ====================================================
-
-  if (
-    httpCode > 0
-  ) {
+  if (httpCode > 0) {
 
     String response =
       http.getString();
-
 
     Serial.println();
     Serial.println(
@@ -734,10 +964,9 @@ void detectBottle() {
       "======================================"
     );
 
-
-    // ==================================================
-    // DETECT BOTTLE
-    // ==================================================
+    // --------------------------------------------------
+    // DETECTED
+    // --------------------------------------------------
 
     if (
       response.indexOf(
@@ -751,36 +980,24 @@ void detectBottle() {
       );
 
       Serial.println(
-        "       BOTTLE DETECTED!"
+        "          BOTTLE DETECTED!"
       );
 
       Serial.println(
         "######################################"
       );
 
-
-      // =================================================
-      // SEND COMMAND
-      // =================================================
-
       sendOpenLidCommand();
 
-    }
-
-    else {
+    } else {
 
       Serial.println();
       Serial.println(
         "No bottle detected."
       );
     }
-  }
 
-  // ====================================================
-  // ERROR
-  // ====================================================
-
-  else {
+  } else {
 
     Serial.println();
     Serial.println(
@@ -788,21 +1005,18 @@ void detectBottle() {
     );
 
     Serial.println(
-      "         YOLO CONNECTION ERROR"
+      "          YOLO CONNECTION ERROR"
     );
 
     Serial.println(
-      "======================================"
-    );
+      "======================================");
 
     Serial.print(
       "Error: "
     );
 
     Serial.println(
-      http.errorToString(
-        httpCode
-      )
+      http.errorToString(httpCode)
     );
 
     Serial.print(
@@ -812,28 +1026,7 @@ void detectBottle() {
     Serial.println(
       YOLO_URL
     );
-
-    Serial.println(
-      "Check:"
-    );
-
-    Serial.println(
-      "1. PC IP"
-    );
-
-    Serial.println(
-      "2. WiFi"
-    );
-
-    Serial.println(
-      "3. Uvicorn"
-    );
-
-    Serial.println(
-      "4. Windows Firewall"
-    );
   }
-
 
   http.end();
 }
@@ -845,32 +1038,16 @@ void detectBottle() {
 
 void setup() {
 
-  Serial.begin(
-    115200
-  );
+  Serial.begin(115200);
 
-  delay(
-    2000
-  );
-
+  // ให้ sensor มีเวลานิ่งหลังเปิดเครื่อง
+  delay(5000);
 
   Serial.println();
-  Serial.println(
-    "======================================"
-  );
-
-  Serial.println(
-    "       SMARTBIN ESP32-CAM"
-  );
-
-  Serial.println(
-    "       YOLO + SMARTBIN"
-  );
-
-  Serial.println(
-    "======================================"
-  );
-
+  Serial.println("======================================");
+  Serial.println("       SMARTBIN ESP32-CAM");
+  Serial.println("       YOLO + SMARTBIN");
+  Serial.println("======================================");
 
   // ====================================================
   // CAMERA
@@ -881,11 +1058,9 @@ void setup() {
     "START CAMERA..."
   );
 
+  if (!initCamera()) {
 
-  if (
-    !initCamera()
-  ) {
-
+    Serial.println();
     Serial.println(
       "Camera failed!"
     );
@@ -900,11 +1075,9 @@ void setup() {
     }
   }
 
-
   Serial.println(
     "CAMERA DONE"
   );
-
 
   // ====================================================
   // WIFI
@@ -915,11 +1088,9 @@ void setup() {
     "START WIFI..."
   );
 
+  if (!connectWiFi()) {
 
-  if (
-    !connectWiFi()
-  ) {
-
+    Serial.println();
     Serial.println(
       "WiFi failed!"
     );
@@ -934,14 +1105,22 @@ void setup() {
     }
   }
 
-
   Serial.println(
     "WIFI DONE"
   );
 
+  // ====================================================
+  // TEST SERVER
+  // ====================================================
+
+  testYOLO();
+
+  delay(500);
+
+  testBackend();
 
   // ====================================================
-  // SYSTEM READY
+  // READY
   // ====================================================
 
   Serial.println();
@@ -970,7 +1149,7 @@ void setup() {
   );
 
   Serial.println(
-    "Backend     : 192.168.1.166:3000"
+    "Backend     : 192.168.1.178:3000"
   );
 
   Serial.println(
@@ -978,7 +1157,6 @@ void setup() {
   );
 
   Serial.println();
-
   Serial.println(
     "Starting detection..."
   );
@@ -991,13 +1169,9 @@ void setup() {
 
 void loop() {
 
-  // ====================================================
-  // DETECTION TIMER
-  // ====================================================
-
   if (
-    millis() - lastDetection
-    >= DETECTION_INTERVAL
+    millis() - lastDetection >=
+    DETECTION_INTERVAL
   ) {
 
     lastDetection =
@@ -1005,7 +1179,6 @@ void loop() {
 
     detectBottle();
   }
-
 
   delay(50);
 }

@@ -4,6 +4,7 @@ const axios = require("axios");
 
 const data = require("../data/store");
 
+
 // ======================================================
 // PRICE FILE
 // ======================================================
@@ -14,11 +15,13 @@ const priceFile = path.join(
     "price.json"
 );
 
+
 // ======================================================
 // LID COMMAND
 // ======================================================
 
 let openCommand = false;
+
 
 // ======================================================
 // SAVE PRICE
@@ -29,13 +32,20 @@ function savePrice() {
     try {
 
         fs.writeFileSync(
+
             priceFile,
-            JSON.stringify({
+
+            JSON.stringify(
+
+                {
                     pricePerKg: data.pricePerKg
                 },
+
                 null,
                 4
+
             )
+
         );
 
     } catch (error) {
@@ -48,6 +58,7 @@ function savePrice() {
     }
 
 }
+
 
 // ======================================================
 // LOAD PRICE
@@ -62,23 +73,36 @@ function loadPrice() {
             savePrice();
 
             return;
+
         }
+
 
         const priceData =
             JSON.parse(
+
                 fs.readFileSync(
                     priceFile,
                     "utf8"
                 )
+
             );
 
+
         if (
-            priceData.pricePerKg !== undefined &&
-            !isNaN(priceData.pricePerKg)
+
+            priceData.pricePerKg !==
+            undefined &&
+
+            !isNaN(
+                priceData.pricePerKg
+            )
+
         ) {
 
             data.pricePerKg =
-                Number(priceData.pricePerKg);
+                Number(
+                    priceData.pricePerKg
+                );
 
         }
 
@@ -93,28 +117,26 @@ function loadPrice() {
 
 }
 
+
 loadPrice();
+
 
 // ======================================================
 // RECEIVE DATA FROM ESP32
 // ======================================================
 //
-// ESP32 ส่งน้ำหนักเป็น "กรัม"
+// ESP32 ส่งน้ำหนัก "ขวดใหม่" เป็น KG
 //
 // ตัวอย่าง:
 //
+// ขวดหนัก 20 g
+//
+// 20 g = 0.020 kg
+//
 // {
-//     "weight": 0.56,
+//     "weight": 0.0200,
 //     "isBottle": true
 // }
-//
-// 0.56 = 0.56 กรัม
-//
-// Backend จะ:
-// 1. เพิ่มจำนวนขวด +1
-// 2. เพิ่มน้ำหนักรวม
-// 3. คำนวณราคา
-// 4. บันทึก History
 //
 // ======================================================
 
@@ -123,14 +145,22 @@ exports.receiveData = (req, res) => {
     try {
 
         const weight =
-            Number(req.body.weight);
+            Number(
+                req.body.weight
+            );
+
 
         const isBottle =
+
             req.body.isBottle === true ||
+
             req.body.isBottle === 1 ||
+
             req.body.isBottle === "true";
 
+
         console.log("");
+
         console.log(
             "======================================"
         );
@@ -140,8 +170,14 @@ exports.receiveData = (req, res) => {
         );
 
         console.log(
-            "Weight:",
-            weight,
+            "New bottle weight:",
+            weight.toFixed(4),
+            "kg"
+        );
+
+        console.log(
+            "New bottle weight:",
+            (weight * 1000).toFixed(2),
             "g"
         );
 
@@ -151,21 +187,32 @@ exports.receiveData = (req, res) => {
         );
 
         console.log(
-            "======================================"
-        );
+            "======================================");
+
 
         // ==================================================
-        // ตรวจข้อมูล
+        // VALIDATE
         // ==================================================
 
-        if (!isBottle ||
+        if (
+
+            !isBottle ||
+
             !isFinite(weight) ||
+
             weight <= 0
+
         ) {
 
             console.log(
                 "⚠️ Invalid recycle data - ignored"
             );
+
+
+            const totalValue =
+                data.totalWeight *
+                data.pricePerKg;
+
 
             return res.json({
 
@@ -177,11 +224,9 @@ exports.receiveData = (req, res) => {
 
                 totalWeight: data.totalWeight,
 
-                totalValue:
-                    (
-                        (data.totalWeight / 1000) *
-                        data.pricePerKg
-                    ),
+                weightKg: data.totalWeight,
+
+                totalValue: totalValue,
 
                 pricePerKg: data.pricePerKg
 
@@ -189,42 +234,35 @@ exports.receiveData = (req, res) => {
 
         }
 
+
         // ==================================================
-        // เพิ่มจำนวนขวด
+        // ADD BOTTLE
         // ==================================================
 
         data.bottleCount += 1;
 
-        // ==================================================
-        // เพิ่มน้ำหนักรวม
-        // ==================================================
-
         data.totalWeight += weight;
 
+
         // ==================================================
-        // แปลงกรัม -> กิโลกรัมเพื่อคำนวณราคา
+        // CURRENT VALUE
         // ==================================================
 
-        const weightKg =
-            weight / 1000;
+        const totalWeightKg =
+            data.totalWeight;
 
-        const transactionPrice =
-            weightKg *
+
+        const totalValue =
+            totalWeightKg *
             data.pricePerKg;
 
+
         // ==================================================
-        // HISTORY
+        // SAVE
         // ==================================================
 
-        data.transactions.push({
+        data.save();
 
-            weight: weight,
-
-            price: transactionPrice,
-
-            time: new Date()
-
-        });
 
         // ==================================================
         // LOG
@@ -235,44 +273,40 @@ exports.receiveData = (req, res) => {
         );
 
         console.log(
-            "📦 Bottle Count:",
+            "📦 Current bottles:",
             data.bottleCount
         );
 
         console.log(
-            "⚖️ Current Bottle:",
-            weight.toFixed(2),
-            "g"
-        );
-
-        console.log(
-            "⚖️ Total Weight:",
-            data.totalWeight.toFixed(2),
-            "g"
-        );
-
-        console.log(
-            "⚖️ Total Weight:",
-            (
-                data.totalWeight / 1000
-            ).toFixed(4),
+            "⚖️ New bottle:",
+            weight.toFixed(4),
             "kg"
         );
 
         console.log(
-            "💰 Current Price:",
-            transactionPrice.toFixed(4),
-            "THB"
+            "⚖️ New bottle:",
+            (weight * 1000).toFixed(2),
+            "g"
         );
 
         console.log(
-            "💰 Total Value:",
-            (
-                (data.totalWeight / 1000) *
-                data.pricePerKg
-            ).toFixed(4),
+            "⚖️ Current total:",
+            data.totalWeight.toFixed(4),
+            "kg"
+        );
+
+        console.log(
+            "⚖️ Current total:",
+            (data.totalWeight * 1000).toFixed(2),
+            "g"
+        );
+
+        console.log(
+            "💰 Current value:",
+            totalValue.toFixed(2),
             "THB"
         );
+
 
         // ==================================================
         // RESPONSE
@@ -282,31 +316,22 @@ exports.receiveData = (req, res) => {
 
             success: true,
 
-            message: "Recycle data received",
+            message: "Bottle added to current session",
 
-            // จำนวนขวด
             count: data.bottleCount,
 
-            // น้ำหนักรวม "กรัม"
             totalWeight: data.totalWeight,
 
-            // น้ำหนักขวดล่าสุด "กรัม"
+            weightKg: data.totalWeight,
+
+            totalValue: totalValue,
+
             lastWeight: weight,
 
-            // น้ำหนักรวม "กิโลกรัม"
-            totalWeightKg: data.totalWeight / 1000,
+            lastWeightKg: weight,
 
-            // ราคาขวดล่าสุด
-            lastPrice: transactionPrice,
+            lastWeightGram: weight * 1000,
 
-            // เงินรวม
-            totalValue:
-                (
-                    (data.totalWeight / 1000) *
-                    data.pricePerKg
-                ),
-
-            // ราคาต่อ kg
             pricePerKg: data.pricePerKg
 
         });
@@ -317,6 +342,7 @@ exports.receiveData = (req, res) => {
             "❌ receiveData error:",
             error
         );
+
 
         return res.status(500).json({
 
@@ -332,61 +358,469 @@ exports.receiveData = (req, res) => {
 
 };
 
+
 // ======================================================
 // GET DASHBOARD DATA
 // ======================================================
 
 exports.getData = (req, res) => {
 
-    res.json({
+    try {
 
-        count: data.bottleCount,
+        const weightKg =
+            Number(
+                data.totalWeight || 0
+            );
 
-        // น้ำหนักรวมเป็นกรัม
-        weight: data.totalWeight,
 
-        // น้ำหนักรวมเป็น kg
-        weightKg: data.totalWeight / 1000,
+        const totalValue =
+            weightKg *
+            Number(
+                data.pricePerKg || 0
+            );
 
-        // เงินรวม
-        price:
-            (
-                (data.totalWeight / 1000) *
-                data.pricePerKg
+
+        res.json({
+
+            // จำนวนขวด
+            count: Number(
+                data.bottleCount || 0
             ),
 
-        // ราคาต่อ kg
-        pricePerKg: data.pricePerKg
+            // KG
+            weight: weightKg,
 
-    });
+            // KG
+            weightKg: weightKg,
+
+            // GRAM
+            weightGram: weightKg * 1000,
+
+            // เงิน
+            price: totalValue,
+
+            // ราคา / KG
+            pricePerKg: Number(
+                data.pricePerKg || 0
+            )
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "❌ getData error:",
+            error
+        );
+
+
+        res.status(500).json({
+
+            success: false,
+
+            message: "Cannot get dashboard data",
+
+            error: error.message
+
+        });
+
+    }
 
 };
 
+
 // ======================================================
-// RESET
+// SELL CURRENT BATCH
+// ======================================================
+
+exports.sell = (req, res) => {
+
+    try {
+
+        // ==================================================
+        // CHECK DATA
+        // ==================================================
+
+        if (
+
+            Number(
+                data.bottleCount
+            ) <= 0 ||
+
+            Number(
+                data.totalWeight
+            ) <= 0
+
+        ) {
+
+            console.log(
+                "⚠️ Sell failed: ไม่มีขวดสำหรับขาย"
+            );
+
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: "ไม่มีขวดสำหรับขาย",
+
+                count: data.bottleCount,
+
+                weight: data.totalWeight
+
+            });
+
+        }
+
+
+        // ==================================================
+        // SNAPSHOT
+        // ==================================================
+
+        const count =
+            Number(
+                data.bottleCount
+            );
+
+
+        const weightKg =
+            Number(
+                data.totalWeight
+            );
+
+
+        const pricePerKg =
+            Number(
+                data.pricePerKg
+            );
+
+
+        const totalPrice =
+            weightKg *
+            pricePerKg;
+
+
+        const saleTime =
+            new Date();
+
+
+        // ==================================================
+        // SAVE HISTORY
+        // ==================================================
+
+        if (!Array.isArray(
+                data.transactions
+            )) {
+
+            data.transactions = [];
+
+        }
+
+
+        data.transactions.push({
+
+            id: Date.now(),
+
+            count: count,
+
+            weight: weightKg,
+
+            weightKg: weightKg,
+
+            weightGram: weightKg * 1000,
+
+            pricePerKg: pricePerKg,
+
+            price: totalPrice,
+
+            time: saleTime
+
+        });
+
+
+        // ==================================================
+        // CLEAR CURRENT SESSION
+        // ==================================================
+
+        data.bottleCount =
+            0;
+
+
+        data.totalWeight =
+            0;
+
+
+        // ==================================================
+        // RESET ESP32
+        // ==================================================
+
+        data.resetCommand =
+            true;
+
+
+        // ==================================================
+        // SAVE
+        // ==================================================
+
+        data.save();
+
+
+        // ==================================================
+        // LOG
+        // ==================================================
+
+        console.log("");
+
+        console.log(
+            "======================================"
+        );
+
+        console.log(
+            "💰 SALE COMPLETED"
+        );
+
+        console.log(
+            "======================================"
+        );
+
+        console.log(
+            "📦 Bottles:",
+            count
+        );
+
+        console.log(
+            "⚖️ Weight:",
+            weightKg.toFixed(4),
+            "kg"
+        );
+
+        console.log(
+            "⚖️ Weight:",
+            (weightKg * 1000).toFixed(2),
+            "g"
+        );
+
+        console.log(
+            "💵 Price/kg:",
+            pricePerKg.toFixed(2),
+            "THB"
+        );
+
+        console.log(
+            "💰 Total:",
+            totalPrice.toFixed(2),
+            "THB"
+        );
+
+        console.log(
+            "📚 Added to sales history"
+        );
+
+        console.log(
+            "📡 Reset command sent to ESP32"
+        );
+
+        console.log(
+            "======================================"
+        );
+
+
+        // ==================================================
+        // RESPONSE
+        // ==================================================
+
+        return res.json({
+
+            success: true,
+
+            message: "ขายสำเร็จ",
+
+            // ให้ frontend ใช้ได้
+            soldCount: count,
+
+            soldWeightKg: weightKg,
+
+            soldWeightGram: weightKg * 1000,
+
+            soldValue: totalPrice,
+
+            sale: {
+
+                count: count,
+
+                weight: weightKg,
+
+                weightKg: weightKg,
+
+                weightGram: weightKg * 1000,
+
+                pricePerKg: pricePerKg,
+
+                price: totalPrice,
+
+                time: saleTime
+
+            }
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "❌ Sell error:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: "Sell failed",
+
+            error: error.message
+
+        });
+
+    }
+
+};
+
+
+// ======================================================
+// RESET DASHBOARD
 // ======================================================
 
 exports.reset = (req, res) => {
 
-    data.bottleCount = 0;
+    try {
 
-    data.totalWeight = 0;
+        data.bottleCount =
+            0;
 
-    data.transactions = [];
 
-    console.log(
-        "🔄 Dashboard data reset"
-    );
+        data.totalWeight =
+            0;
+
+
+        data.transactions = [];
+
+
+        // ESP32 reset
+        data.resetCommand =
+            true;
+
+
+        data.save();
+
+
+        console.log("");
+
+        console.log(
+            "======================================"
+        );
+
+        console.log(
+            "🔄 DASHBOARD RESET"
+        );
+
+        console.log(
+            "📦 Bottle Count = 0"
+        );
+
+        console.log(
+            "⚖️ Total Weight = 0 kg"
+        );
+
+        console.log(
+            "🗑️ History Cleared"
+        );
+
+        console.log(
+            "📡 Reset command sent to ESP32"
+        );
+
+        console.log(
+            "======================================"
+        );
+
+
+        res.json({
+
+            success: true,
+
+            message: "Reset success",
+
+            count: 0,
+
+            totalWeight: 0,
+
+            weightKg: 0
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "❌ Reset error:",
+            error
+        );
+
+
+        res.status(500).json({
+
+            success: false,
+
+            message: "Reset failed",
+
+            error: error.message
+
+        });
+
+    }
+
+};
+
+
+// ======================================================
+// CHECK RESET COMMAND FROM ESP32
+// ======================================================
+
+exports.checkReset = (req, res) => {
+
+    if (
+        data.resetCommand
+    ) {
+
+        data.resetCommand =
+            false;
+
+
+        data.save();
+
+
+        console.log(
+            "📡 ESP32 received RESET command"
+        );
+
+
+        return res.json({
+
+            reset: true
+
+        });
+
+    }
+
 
     res.json({
 
-        success: true,
-
-        message: "Reset success"
+        reset: false
 
     });
 
 };
+
 
 // ======================================================
 // SET PRICE
@@ -395,10 +829,17 @@ exports.reset = (req, res) => {
 exports.setPrice = (req, res) => {
 
     const price =
-        Number(req.body.price);
+        Number(
+            req.body.price
+        );
 
-    if (!isFinite(price) ||
+
+    if (
+
+        !isFinite(price) ||
+
         price <= 0
+
     ) {
 
         return res.status(400).json({
@@ -411,16 +852,22 @@ exports.setPrice = (req, res) => {
 
     }
 
+
     data.pricePerKg =
         price;
 
+
     savePrice();
+
+    data.save();
+
 
     console.log(
         "💰 Price updated:",
         price,
         "THB/kg"
     );
+
 
     res.json({
 
@@ -433,6 +880,7 @@ exports.setPrice = (req, res) => {
     });
 
 };
+
 
 // ======================================================
 // GET PRICE
@@ -448,6 +896,7 @@ exports.getPetPrice = (req, res) => {
 
 };
 
+
 // ======================================================
 // CONTROL LID
 // ======================================================
@@ -457,20 +906,39 @@ exports.controlLid = (req, res) => {
     const action =
         req.body.action;
 
-    if (action === "open") {
 
-        openCommand = true;
+    if (
+        action === "open"
+    ) {
 
-    } else if (action === "close") {
+        openCommand =
+            true;
 
-        openCommand = false;
+    } else if (
+        action === "close"
+    ) {
+
+        openCommand =
+            false;
+
+    } else {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message: "Invalid lid action"
+
+        });
 
     }
+
 
     console.log(
         "🚪 Lid action:",
         action
     );
+
 
     res.json({
 
@@ -482,17 +950,21 @@ exports.controlLid = (req, res) => {
 
 };
 
+
 // ======================================================
 // TRIGGER LID
 // ======================================================
 
 exports.triggerLid = (req, res) => {
 
-    openCommand = true;
+    openCommand =
+        true;
+
 
     console.log(
         "🚪 OPEN LID COMMAND"
     );
+
 
     res.json({
 
@@ -504,19 +976,25 @@ exports.triggerLid = (req, res) => {
 
 };
 
+
 // ======================================================
 // ESP32 CHECK LID
 // ======================================================
 
 exports.checkLid = (req, res) => {
 
-    if (openCommand) {
+    if (
+        openCommand
+    ) {
 
-        openCommand = false;
+        openCommand =
+            false;
+
 
         console.log(
             "📡 ESP32 received OPEN command"
         );
+
 
         return res.json({
 
@@ -526,6 +1004,7 @@ exports.checkLid = (req, res) => {
 
     }
 
+
     res.json({
 
         action: "none"
@@ -534,24 +1013,32 @@ exports.checkLid = (req, res) => {
 
 };
 
+
 // ======================================================
 // UPLOAD IMAGE -> YOLO
 // ======================================================
 
-exports.uploadImage = async(req, res) => {
+exports.uploadImage = async(
+    req,
+    res
+) => {
 
     try {
 
         const chunks = [];
 
+
         req.on(
             "data",
             chunk => {
 
-                chunks.push(chunk);
+                chunks.push(
+                    chunk
+                );
 
             }
         );
+
 
         req.on(
             "end",
@@ -560,9 +1047,13 @@ exports.uploadImage = async(req, res) => {
                 try {
 
                     const buffer =
-                        Buffer.concat(chunks);
+                        Buffer.concat(
+                            chunks
+                        );
+
 
                     console.log("");
+
                     console.log(
                         "======================================"
                     );
@@ -577,6 +1068,7 @@ exports.uploadImage = async(req, res) => {
                         "======================================"
                     );
 
+
                     // ==================================================
                     // SAVE IMAGE
                     // ==================================================
@@ -588,22 +1080,26 @@ exports.uploadImage = async(req, res) => {
                             "image.jpg"
                         );
 
+
                     fs.writeFileSync(
                         imagePath,
                         buffer
                     );
 
+
                     console.log(
                         "💾 image.jpg saved"
                     );
 
+
                     // ==================================================
-                    // SEND TO YOLO
+                    // SEND YOLO
                     // ==================================================
 
                     console.log(
                         "🤖 Sending image to YOLO..."
                     );
+
 
                     const yoloRes =
                         await axios.post(
@@ -626,9 +1122,11 @@ exports.uploadImage = async(req, res) => {
 
                         );
 
+
                     console.log(
                         "🤖 YOLO RESPONSE:"
                     );
+
 
                     console.log(
                         JSON.stringify(
@@ -636,39 +1134,61 @@ exports.uploadImage = async(req, res) => {
                         )
                     );
 
+
                     // ==================================================
                     // YOLO RESULT
                     // ==================================================
 
                     const detected =
+
                         yoloRes.data &&
+
                         yoloRes.data.detected === true;
 
+
                     const yoloCount =
+
                         Number(
+
                             yoloRes.data &&
                             yoloRes.data.count ?
                             yoloRes.data.count :
                             0
+
                         );
 
+
                     const bottles =
+
                         yoloRes.data &&
+
                         Array.isArray(
                             yoloRes.data.bottles
-                        ) ?
-                        yoloRes.data.bottles :
+                        )
+
+                    ?
+
+                    yoloRes.data.bottles
+
+                        :
+
                         [];
+
 
                     // ==================================================
                     // DETECTED
                     // ==================================================
 
-                    if (detected) {
+                    if (
+                        detected
+                    ) {
 
-                        openCommand = true;
+                        openCommand =
+                            true;
+
 
                         console.log("");
+
                         console.log(
                             "🍾 BOTTLE DETECTED!"
                         );
@@ -692,6 +1212,7 @@ exports.uploadImage = async(req, res) => {
                         );
 
                     }
+
 
                     // ==================================================
                     // RESPONSE
@@ -720,6 +1241,7 @@ exports.uploadImage = async(req, res) => {
                         error.message
                     );
 
+
                     return res.status(500).json({
 
                         success: false,
@@ -742,6 +1264,7 @@ exports.uploadImage = async(req, res) => {
             error
         );
 
+
         return res.status(500).json({
 
             success: false,
@@ -753,6 +1276,7 @@ exports.uploadImage = async(req, res) => {
     }
 
 };
+
 
 // ======================================================
 // GET HISTORY
@@ -766,6 +1290,7 @@ exports.getHistory = (req, res) => {
 
 };
 
+
 // ======================================================
 // DELETE HISTORY
 // ======================================================
@@ -774,9 +1299,14 @@ exports.deleteHistory = (req, res) => {
 
     data.transactions = [];
 
+
+    data.save();
+
+
     console.log(
         "🗑️ History deleted"
     );
+
 
     res.json({
 
