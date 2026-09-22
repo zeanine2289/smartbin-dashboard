@@ -1,181 +1,656 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta charset="utf-8">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <title>
-        Admin Panel - SmartBin
-    </title>
+    <title>SmartBin | Admin</title>
 
     <link rel="stylesheet" href="./admin.css">
-
 </head>
 
 <body>
 
-    <div class="container">
+    <div class="app">
 
-        <!-- HEADER -->
+        <!-- ================= SIDEBAR ================= -->
 
-        <div class="header">
+        <aside class="sidebar">
 
-            <div>
+            <div class="logo">
+                <div class="logo-mark">♻</div>
 
-                <h1>
-                    ⚙️ Admin Panel
-                </h1>
+                <div>
+                    <h2>SmartBin</h2>
+                    <span>Management System</span>
+                </div>
+            </div>
 
-                <p>
-                    จัดการระบบ SmartBin
-                </p>
+
+            <div class="menu-title">
+                MAIN MENU
+            </div>
+
+            <nav>
+
+                <a href="index.html" class="menu-item">
+                    <div class="menu-icon">⌂</div>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="index.html" class="menu-item">
+                    <div class="menu-icon">◉</div>
+                    <span>ข้อมูลการรับขวด</span>
+                </a>
+
+                <a href="admin.html" class="menu-item active">
+                    <div class="menu-icon">⚙</div>
+                    <span>ตั้งค่าระบบ</span>
+                </a>
+
+            </nav>
+
+
+            <div class="menu-title device-title">
+                SYSTEM
+            </div>
+
+            <div class="system-menu">
+
+                <div class="system-item">
+                    <span class="dot green"></span> Backend
+                </div>
+
+                <div class="system-item">
+                    <span class="dot green"></span> SmartBin
+                </div>
+
+                <div class="system-item">
+                    <span class="dot green"></span> AI Detection
+                </div>
 
             </div>
 
-            <a href="index.html" class="back-btn">
 
-            ← กลับหน้าหลัก
+            <div class="sidebar-bottom">
 
-        </a>
+                <div class="admin-user">
 
-        </div>
+                    <div class="avatar">
+                        A
+                    </div>
 
-        <!-- SET PRICE -->
+                    <div>
+                        <strong>Administrator</strong>
+                        <span>System Admin</span>
+                    </div>
 
-        <div class="card">
-
-            <h2>
-                💰 ตั้งราคาขวดพลาสติก
-            </h2>
-
-            <p class="description">
-
-                กำหนดราคาที่ระบบจะใช้ คำนวณเงินจากน้ำหนักขวด
-
-            </p>
-
-            <div class="price-box">
-
-                <input type="number" id="priceInput" placeholder="เช่น 12" min="0" step="0.01">
-
-                <span>
-                บาท / กก.
-            </span>
+                </div>
 
             </div>
 
-            <button class="primary-btn" onclick="setPrice()">
+        </aside>
 
-            💾 บันทึกราคา
 
-        </button>
+        <!-- ================= MAIN ================= -->
 
-            <div class="current-price">
+        <main class="main">
 
-                ราคาปัจจุบัน
 
-                <strong>
+            <!-- TOPBAR -->
 
-                <span
-                    id="currentPrice">
-                    -
+            <header class="topbar">
+
+                <div>
+
+                    <div class="breadcrumb">
+                        SmartBin / Administration
+                    </div>
+
+                    <h1>System Control Center</h1>
+
+                    <p>
+                        จัดการการตั้งค่าและตรวจสอบสถานะของระบบ SmartBin
+                    </p>
+
+                </div>
+
+
+                <div class="top-actions">
+
+                    <div class="connection">
+
+                        <span class="pulse"></span>
+
+                        <span id="topConnection">
+                        Connecting...
+                    </span>
+
+                    </div>
+
+                    <a href="index.html" class="home-button">
+                    ← Dashboard
+                </a>
+
+                </div>
+
+            </header>
+
+
+
+            <!-- ================= DEVICE STATUS ================= -->
+
+            <section class="status-section">
+
+                <div class="section-heading">
+
+                    <div>
+                        <h2>System Overview</h2>
+                        <p>สถานะการเชื่อมต่อของระบบ</p>
+                    </div>
+
+                    <span class="live-label">
+                    ● LIVE
                 </span>
 
-            </strong> บาท/กก.
+                </div>
 
-            </div>
 
-        </div>
+                <div class="status-grid">
 
-        <!-- RESET -->
 
-        <div class="card warning-card">
+                    <!-- BACKEND -->
 
-            <h2>
-                🔄 รีเซ็ตระบบ
-            </h2>
+                    <div class="status-card">
 
-            <p class="description">
+                        <div class="status-card-top">
 
-                รีเซ็ตจำนวนขวดและน้ำหนักของระบบ
+                            <div class="big-icon blue">
+                                ◉
+                            </div>
 
-                <br>
+                            <span class="status-badge checking" id="backendBadge">
+                            Checking
+                        </span>
 
-                <strong>
-                ขวดเก่าที่ยังอยู่บนเครื่องชั่ง
-                จะไม่ถูกลบออกจากน้ำหนักจริง
-            </strong>
+                        </div>
 
-            </p>
+                        <div class="status-name">
+                            Backend Server
+                        </div>
 
-            <button class="warning-btn" onclick="resetData()">
+                        <div class="status-value" id="serverStatus">
+                            กำลังตรวจสอบ...
+                        </div>
 
-            🔄 Reset ระบบ
+                        <div class="status-line"></div>
 
-        </button>
+                        <div class="status-footer">
+                            API Endpoint
+                            <strong>/api</strong>
+                        </div>
 
-        </div>
+                    </div>
 
-        <!-- DELETE HISTORY -->
 
-        <div class="card danger-card">
 
-            <h2>
-                🗑️ ลบประวัติการขาย
-            </h2>
+                    <!-- SMARTBIN -->
 
-            <p class="description">
+                    <div class="status-card">
 
-                ลบข้อมูลประวัติการรับขวดทั้งหมดจากระบบ
+                        <div class="status-card-top">
 
-                <br>
+                            <div class="big-icon green">
+                                ♻
+                            </div>
 
-                <strong>
-                การดำเนินการนี้ไม่สามารถย้อนกลับได้
-            </strong>
+                            <span class="status-badge online">
+                            Ready
+                        </span>
 
-            </p>
+                        </div>
 
-            <button class="danger-btn" onclick="deleteHistory()">
+                        <div class="status-name">
+                            SmartBin Device
+                        </div>
 
-            🗑️ ลบประวัติทั้งหมด
+                        <div class="status-value">
+                            ระบบพร้อมใช้งาน
+                        </div>
 
-        </button>
+                        <div class="status-line"></div>
 
-        </div>
+                        <div class="status-footer">
+                            Device
+                            <strong>SmartBin</strong>
+                        </div>
 
-        <!-- STATUS -->
+                    </div>
 
-        <div class="card">
 
-            <h2>
-                📡 สถานะระบบ
-            </h2>
 
-            <div class="status-row">
+                    <!-- AI -->
 
-                <span>
-                Backend
-            </span>
+                    <div class="status-card">
 
-                <span id="serverStatus" class="status offline">
+                        <div class="status-card-top">
 
-                กำลังตรวจสอบ...
+                            <div class="big-icon purple">
+                                AI
+                            </div>
 
-            </span>
+                            <span class="status-badge online">
+                            Ready
+                        </span>
 
-            </div>
+                        </div>
 
-        </div>
+                        <div class="status-name">
+                            AI Detection
+                        </div>
+
+                        <div class="status-value">
+                            Bottle Detection
+                        </div>
+
+                        <div class="status-line"></div>
+
+                        <div class="status-footer">
+                            Model
+                            <strong>YOLO</strong>
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- PRICE -->
+
+                    <div class="status-card price-status">
+
+                        <div class="status-card-top">
+
+                            <div class="big-icon orange">
+                                ฿
+                            </div>
+
+                            <span class="status-badge online">
+                            Active
+                        </span>
+
+                        </div>
+
+                        <div class="status-name">
+                            Current Price
+                        </div>
+
+                        <div class="price-display">
+
+                            <span id="currentPrice">
+                            -
+                        </span>
+
+                            <small>
+                            บาท / กก.
+                        </small>
+
+                        </div>
+
+                        <div class="status-line"></div>
+
+                        <div class="status-footer">
+                            Pricing System
+                            <strong>Active</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ================= SETTINGS ================= -->
+
+            <section class="settings-section">
+
+
+                <div class="section-heading">
+
+                    <div>
+                        <h2>System Configuration</h2>
+                        <p>ตั้งค่าการทำงานของ SmartBin</p>
+                    </div>
+
+                </div>
+
+
+                <div class="settings-layout">
+
+
+                    <!-- PRICE PANEL -->
+
+                    <div class="config-panel">
+
+                        <div class="config-header">
+
+                            <div class="config-icon blue">
+                                ฿
+                            </div>
+
+                            <div>
+
+                                <h3>
+                                    ราคาขวดพลาสติก
+                                </h3>
+
+                                <p>
+                                    กำหนดราคาสำหรับการคำนวณเงิน
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="config-body">
+
+                            <label>
+                            ราคาซื้อขวด
+                        </label>
+
+
+                            <div class="large-input">
+
+                                <input type="number" id="priceInput" placeholder="10.00" min="0" step="0.01">
+
+                                <span>
+                                บาท / กก.
+                            </span>
+
+                            </div>
+
+
+                            <div class="input-help">
+                                ราคานี้จะถูกใช้ในการคำนวณเงิน เมื่อมีการรับขวดเข้าสู่ระบบ
+                            </div>
+
+
+                            <button class="save-button" onclick="setPrice()">
+                            <span>✓</span>
+                            บันทึกการตั้งค่า
+                        </button>
+
+                        </div>
+
+
+                        <div class="current-setting">
+
+                            <div>
+
+                                <span>
+                                ราคาที่ใช้งานอยู่
+                            </span>
+
+                                <small>
+                                Current system price
+                            </small>
+
+                            </div>
+
+
+                            <div class="current-number">
+
+                                <strong id="currentPriceLarge">
+                                -
+                            </strong>
+
+                                <span>
+                                บาท/กก.
+                            </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- SYSTEM INFORMATION -->
+
+                    <div class="config-panel">
+
+                        <div class="config-header">
+
+                            <div class="config-icon purple">
+                                ⚙
+                            </div>
+
+                            <div>
+
+                                <h3>
+                                    System Information
+                                </h3>
+
+                                <p>
+                                    ข้อมูลการทำงานของระบบ
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="information-list">
+
+
+                            <div class="information-row">
+
+                                <span>
+                                System
+                            </span>
+
+                                <strong>
+                                SmartBin
+                            </strong>
+
+                            </div>
+
+
+                            <div class="information-row">
+
+                                <span>
+                                Backend
+                            </span>
+
+                                <strong id="backendInfo" class="checking-text">
+                                Checking...
+                            </strong>
+
+                            </div>
+
+
+                            <div class="information-row">
+
+                                <span>
+                                API
+                            </span>
+
+                                <strong>
+                                /api
+                            </strong>
+
+                            </div>
+
+
+                            <div class="information-row">
+
+                                <span>
+                                Detection
+                            </span>
+
+                                <strong>
+                                YOLO
+                            </strong>
+
+                            </div>
+
+
+                            <div class="information-row">
+
+                                <span>
+                                Device
+                            </span>
+
+                                <strong class="green-text">
+                                Ready
+                            </strong>
+
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ================= CONTROL ================= -->
+
+            <section class="control-section">
+
+                <div class="section-heading">
+
+                    <div>
+                        <h2>System Operations</h2>
+
+                        <p>
+                            การดำเนินการที่มีผลต่อข้อมูลของระบบ
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="operation-grid">
+
+
+                    <!-- RESET -->
+
+                    <div class="operation-card warning-card">
+
+                        <div class="operation-header">
+
+                            <div class="operation-icon warning">
+                                ↻
+                            </div>
+
+                            <span class="operation-label warning-label">
+                            WARNING
+                        </span>
+
+                        </div>
+
+
+                        <h3>
+                            Reset System
+                        </h3>
+
+
+                        <p>
+                            รีเซ็ตจำนวนขวดและน้ำหนักสะสม ของระบบ SmartBin
+                        </p>
+
+
+                        <div class="operation-note">
+                            ⚠ ขวดที่ยังอยู่บนเครื่องชั่ง จะไม่ถูกลบออกจากน้ำหนักจริง
+                        </div>
+
+
+                        <button class="operation-button warning-button" onclick="resetData()">
+                        ↻ Reset ระบบ
+                    </button>
+
+                    </div>
+
+
+
+                    <!-- DELETE -->
+
+                    <div class="operation-card danger-card">
+
+                        <div class="operation-header">
+
+                            <div class="operation-icon danger">
+                                🗑
+                            </div>
+
+                            <span class="operation-label danger-label">
+                            DANGER
+                        </span>
+
+                        </div>
+
+
+                        <h3>
+                            Delete History
+                        </h3>
+
+
+                        <p>
+                            ลบประวัติการรับขวดทั้งหมด ที่ถูกบันทึกไว้ในระบบ
+                        </p>
+
+
+                        <div class="operation-note danger-note">
+                            ⚠ การดำเนินการนี้ไม่สามารถย้อนกลับได้
+                        </div>
+
+
+                        <button class="operation-button danger-button" onclick="deleteHistory()">
+                        🗑 ลบประวัติทั้งหมด
+                    </button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ================= FOOTER ================= -->
+
+            <footer>
+
+                <span>SmartBin</span>
+
+                <span class="footer-dot">
+                •
+            </span> Admin Control Center
+
+                <span class="footer-dot">
+                •
+            </span> System Management
+
+            </footer>
+
+        </main>
 
     </div>
 
+
+
     <script>
         // =====================================================
-        // LOCALHOST BACKEND
+        // API
         // =====================================================
 
         const API = "/api";
@@ -186,18 +661,26 @@
         // =====================================================
 
         const serverStatus =
-            document.getElementById(
-                "serverStatus"
-            );
+            document.getElementById("serverStatus");
 
         const currentPrice =
-            document.getElementById(
-                "currentPrice"
-            );
+            document.getElementById("currentPrice");
+
+        const currentPriceLarge =
+            document.getElementById("currentPriceLarge");
+
+        const backendInfo =
+            document.getElementById("backendInfo");
+
+        const backendBadge =
+            document.getElementById("backendBadge");
+
+        const topConnection =
+            document.getElementById("topConnection");
 
 
         // =====================================================
-        // LOAD CURRENT PRICE
+        // LOAD DATA
         // =====================================================
 
         async function loadCurrentPrice() {
@@ -205,9 +688,8 @@
             try {
 
                 const response =
-                    await fetch(
-                        `${API}/data`
-                    );
+                    await fetch(`${API}/data`);
+
 
                 if (!response.ok) {
 
@@ -217,42 +699,95 @@
 
                 }
 
+
                 const data =
                     await response.json();
+
 
                 const price =
                     Number(
                         data.pricePerKg || 0
                     );
 
+
+                // PRICE
+
                 currentPrice.innerText =
                     price.toFixed(2);
+
+                currentPriceLarge.innerText =
+                    price.toFixed(2);
+
+
+                // SERVER STATUS
 
                 serverStatus.innerText =
                     "🟢 ออนไลน์";
 
-                serverStatus.className =
-                    "status online";
+
+                backendInfo.innerText =
+                    "Connected";
+
+
+                backendInfo.className =
+                    "green-text";
+
+
+                backendBadge.innerText =
+                    "Online";
+
+
+                backendBadge.className =
+                    "status-badge online";
+
+
+                topConnection.innerText =
+                    "System Online";
+
 
             } catch (error) {
 
                 console.error(
-                    "❌ Backend Error:",
+                    "Backend Error:",
                     error
                 );
+
 
                 serverStatus.innerText =
                     "🔴 ออฟไลน์";
 
-                serverStatus.className =
-                    "status offline";
+
+                backendInfo.innerText =
+                    "Offline";
+
+
+                backendInfo.className =
+                    "red-text";
+
+
+                backendBadge.innerText =
+                    "Offline";
+
+
+                backendBadge.className =
+                    "status-badge offline";
+
+
+                topConnection.innerText =
+                    "Backend Offline";
+
 
                 currentPrice.innerText =
+                    "-";
+
+
+                currentPriceLarge.innerText =
                     "-";
 
             }
 
         }
+
 
 
         // =====================================================
@@ -266,12 +801,12 @@
                     "priceInput"
                 );
 
+
             const price =
                 Number(input.value);
 
-            if (!price ||
-                price <= 0
-            ) {
+
+            if (!price || price <= 0) {
 
                 alert(
                     "กรุณาใส่ราคาที่ถูกต้อง"
@@ -281,28 +816,24 @@
 
             }
 
+
             try {
 
                 const response =
                     await fetch(
                         `${API}/set-price`, {
-
                             method: "POST",
 
                             headers: {
-
                                 "Content-Type": "application/json"
-
                             },
 
                             body: JSON.stringify({
-
                                 price: price
-
                             })
-
                         }
                     );
+
 
                 if (!response.ok) {
 
@@ -312,28 +843,35 @@
 
                 }
 
+
                 const result =
                     await response.json();
+
 
                 console.log(
                     "Set price:",
                     result
                 );
 
+
                 alert(
                     "✅ บันทึกราคาสำเร็จ"
                 );
 
+
                 input.value = "";
 
+
                 loadCurrentPrice();
+
 
             } catch (error) {
 
                 console.error(
-                    "❌ Set price error:",
+                    "Set price error:",
                     error
                 );
+
 
                 alert(
                     "❌ ไม่สามารถบันทึกราคาได้\n\n" +
@@ -345,8 +883,9 @@
         }
 
 
+
         // =====================================================
-        // RESET DATA
+        // RESET
         // =====================================================
 
         async function resetData() {
@@ -356,22 +895,23 @@
                     "⚠️ ต้องการ Reset ระบบใช่หรือไม่?"
                 );
 
+
             if (!confirmReset) {
 
                 return;
 
             }
 
+
             try {
 
                 const response =
                     await fetch(
                         `${API}/reset`, {
-
                             method: "POST"
-
                         }
                     );
+
 
                 if (!response.ok) {
 
@@ -381,20 +921,25 @@
 
                 }
 
+
                 await response.json();
+
 
                 alert(
                     "✅ Reset ระบบสำเร็จ"
                 );
 
+
                 loadCurrentPrice();
+
 
             } catch (error) {
 
                 console.error(
-                    "❌ Reset error:",
+                    "Reset error:",
                     error
                 );
+
 
                 alert(
                     "❌ ไม่สามารถ Reset ระบบได้\n\n" +
@@ -404,6 +949,7 @@
             }
 
         }
+
 
 
         // =====================================================
@@ -417,22 +963,23 @@
                     "⚠️ ต้องการลบประวัติการขายทั้งหมดหรือไม่?"
                 );
 
+
             if (!confirmDelete) {
 
                 return;
 
             }
 
+
             try {
 
                 const response =
                     await fetch(
                         `${API}/history`, {
-
                             method: "DELETE"
-
                         }
                     );
+
 
                 if (!response.ok) {
 
@@ -442,18 +989,22 @@
 
                 }
 
+
                 await response.json();
+
 
                 alert(
                     "🗑️ ลบประวัติทั้งหมดแล้ว"
                 );
 
+
             } catch (error) {
 
                 console.error(
-                    "❌ Delete history error:",
+                    "Delete history error:",
                     error
                 );
+
 
                 alert(
                     "❌ ไม่สามารถลบประวัติได้\n\n" +
@@ -463,6 +1014,7 @@
             }
 
         }
+
 
 
         // =====================================================

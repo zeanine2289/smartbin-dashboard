@@ -1,459 +1,110 @@
 <!doctype html>
 <html lang="th">
-
 <head>
-
     <meta charset="utf-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <title>SmartBin Dashboard</title>
-
     <link rel="stylesheet" href="./sty.css">
-
-    <style>
-        #map {
-            width: 100%;
-            height: 450px;
-            min-height: 450px;
-            border-radius: 12px;
-            margin-top: 15px;
-            overflow: hidden;
-        }
-        
-        .map-card {
-            margin-top: 20px;
-        }
-        
-        .map-search {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .map-search input {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 15px;
-        }
-        
-        .map-search button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 15px;
-        }
-        
-        .shop-list {
-            margin-top: 15px;
-        }
-        
-        .shop-card {
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-            cursor: pointer;
-            transition: .2s;
-        }
-        
-        .shop-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
-        }
-        
-        .shop-name {
-            font-size: 17px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        
-        .shop-address {
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-        
-        .shop-phone {
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-        
-        .shop-distance {
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        
-        .shop-direction {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 8px 12px;
-            background: #16a34a;
-            color: white;
-            border-radius: 7px;
-            text-decoration: none;
-        }
-        
-        .google-popup {
-            min-width: 220px;
-        }
-        
-        .google-popup h3 {
-            margin-top: 0;
-        }
-        
-        .direction-button {
-            display: block;
-            text-align: center;
-            padding: 9px;
-            background: #16a34a;
-            color: white;
-            border-radius: 7px;
-            text-decoration: none;
-            margin-top: 10px;
-        }
-        
-        .status-online {
-            color: green;
-            font-weight: 600;
-        }
-        /* ==================================================
-           SELL SECTION
-        ================================================== */
-        
-        .sell-section {
-            margin-top: 20px;
-            text-align: center;
-        }
-        
-        .sell-button {
-            width: 100%;
-            padding: 16px 20px;
-            border: none;
-            border-radius: 12px;
-            background: #16a34a;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: .2s;
-        }
-        
-        .sell-button:hover {
-            transform: translateY(-2px);
-            opacity: .9;
-        }
-        
-        .sell-button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-            opacity: 1;
-        }
-        
-        .sell-info {
-            margin-top: 8px;
-            color: #666;
-            font-size: 14px;
-        }
-    </style>
-
 </head>
-
 <body>
-
-    <!-- ==================================================
-         HEADER
-    ================================================== -->
-
     <header class="app-header">
-
-        <div>
-
-            <h1>
-                ♻️ SmartBin Dashboard
-            </h1>
-
-            <p>
-                PET Plastic Bottle Recycling
-            </p>
-
+        <div class="brand">
+            <div class="brand-icon">♻</div>
+            <div>
+                <h1>SmartBin</h1>
+                <p>ระบบคัดแยกและรับซื้อขวดพลาสติกด้วย AI</p>
+            </div>
         </div>
-
-        <div class="header-buttons">
-
-            <button onclick="loadData()" class="refresh-btn">
-                🔄 รีเฟรช
-            </button>
-
-            <a href="admin.html">
-
-                <button class="admin-btn">
-                    ⚙️ Admin
-                </button>
-
-            </a>
-
+        <div class="header-right">
+            <div class="online-pill"><span></span><b id="serverStatus">กำลังตรวจสอบ...</b></div>
+            <div class="last-update">อัปเดตล่าสุด <b id="lastUpdate">--:--:--</b></div>
+            <button onclick="loadData(); loadHistory();" class="icon-btn" title="รีเฟรช">↻</button>
+            <a href="admin.html" class="admin-link">⚙ Admin</a>
         </div>
-
     </header>
 
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="side-logo">♻<span>SmartBin</span></div>
+            <nav>
+                <a class="active" href="#top">⌂ <span>หน้าหลัก</span></a>
+                <a href="#history">▣ <span>ประวัติการขาย</span></a>
+                <a href="#map-section">⌖ <span>แผนที่ร้านรับซื้อ</span></a>
+                <a href="#status-section">◉ <span>สถานะระบบ</span></a>
+                <a href="admin.html">⚙ <span>ตั้งค่า</span></a>
+            </nav>
+            <div class="sidebar-footer">รีไซเคิลวันนี้<br><strong>เพื่อโลกที่ยั่งยืน 🌱</strong></div>
+        </aside>
 
-    <!-- ==================================================
-         MAIN
-    ================================================== -->
-
-    <main class="container">
-
-
-        <!-- ==================================================
-             CURRENT RECYCLE
-        ================================================== -->
-
-        <section class="cards">
-
-
-            <!-- จำนวนขวด -->
-
-            <div class="card">
-
-                <div class="label">
-                    🍾 จำนวนขวด
-                </div>
-
-                <div id="count" class="value">
-                    0
-                </div>
-
-                <div class="unit">
-                    ขวด
-                </div>
-
+        <main class="container" id="top">
+            <div class="page-title">
+                <div><h2>Dashboard</h2><p>ภาพรวมการทำงานของ SmartBin แบบ Real-time</p></div>
             </div>
 
+            <section class="cards">
+                <div class="stat-card blue"><div class="stat-icon">🍾</div><div><span>ขวดที่สะสม</span><strong id="count">0</strong><small>ขวด</small></div></div>
+                <div class="stat-card green"><div class="stat-icon">⚖</div><div><span>น้ำหนักรวม</span><strong id="totalWeight">0.00</strong><small>กิโลกรัม</small></div></div>
+                <div class="stat-card orange"><div class="stat-icon">฿</div><div><span>มูลค่าปัจจุบัน</span><strong id="totalValue">0.00</strong><small>บาท</small></div></div>
+                <div class="stat-card purple"><div class="stat-icon">🏷</div><div><span>ราคาปัจจุบัน</span><strong id="petPrice">0.00</strong><small>บาท / กก.</small></div></div>
+            </section>
 
-            <!-- น้ำหนัก -->
-
-            <div class="card">
-
-                <div class="label">
-                    ⚖️ น้ำหนักรวม
+            <section class="hero-grid">
+                <div class="panel smartbin-panel">
+                    <div class="panel-title"><div><h3>สถานะ SmartBin</h3><p>ตรวจสอบสถานะระบบล่าสุด</p></div><span class="ready-badge">● พร้อมใช้งาน</span></div>
+                    <div class="bin-content">
+                        <div class="bin-illustration">♻<span>SMART<br>BIN</span></div>
+                        <div class="status-items">
+                            <div><span class="status-dot green-dot"></span><label>ระบบถัง</label><b id="binStatus">พร้อมใช้งาน</b></div>
+                            <div><span class="status-dot blue-dot"></span><label>ข้อมูลเซนเซอร์</label><b id="sensorStatus">กำลังอัปเดต</b></div>
+                            <div><span class="status-dot purple-dot"></span><label>AI Detection</label><b id="aiStatus">เชื่อมต่อระบบ</b></div>
+                        </div>
+                    </div>
+                    <div class="last-detect">ตรวจสอบข้อมูลล่าสุด: <b id="lastDetect">--:--:--</b></div>
                 </div>
 
-                <div id="totalWeight" class="value">
-                    0.00
+                <div class="panel sell-panel">
+                    <div class="money-icon">฿</div>
+                    <h3>พร้อมขาย</h3>
+                    <p><b id="sellCount">0</b> ขวด · <b id="sellWeight">0.00</b> kg</p>
+                    <div class="sell-value">฿ <span id="sellValue">0.00</span></div>
+                    <button id="sellButton" class="sell-button" onclick="sellRecycle()" disabled>💰 ยืนยันการขาย</button>
+                    <div class="sell-info">ขายขวดทั้งหมดที่สะสมอยู่ในถัง</div>
+                </div>
+            </section>
+
+            <section class="trend-grid">
+                <div class="panel chart-card"><div class="chart-title"><h3>จำนวนขวด</h3><span>7 รายการล่าสุด</span></div><div id="bottleChart" class="bar-chart"><div class="chart-empty">ยังไม่มีข้อมูล</div></div><div class="chart-foot">ขวด</div></div>
+                <div class="panel chart-card"><div class="chart-title"><h3>น้ำหนักรีไซเคิล</h3><span>7 รายการล่าสุด</span></div><div id="weightChart" class="bar-chart green-bars"><div class="chart-empty">ยังไม่มีข้อมูล</div></div><div class="chart-foot">กิโลกรัม</div></div>
+                <div class="panel chart-card"><div class="chart-title"><h3>มูลค่าที่ได้รับ</h3><span>7 รายการล่าสุด</span></div><div id="valueChart" class="bar-chart purple-bars"><div class="chart-empty">ยังไม่มีข้อมูล</div></div><div class="chart-foot">บาท</div></div>
+            </section>
+
+            <section class="bottom-grid">
+                <div class="panel" id="history">
+                    <div class="section-header"><div><h3>📦 ประวัติการขายล่าสุด</h3><p>รายการขวดพลาสติกที่ขายแล้ว</p></div></div>
+                    <div class="history-container"><div class="empty-history">ยังไม่มีประวัติการขาย</div></div>
                 </div>
 
-                <div class="unit">
-                    กิโลกรัม
+                <div class="panel" id="map-section">
+                    <div class="section-header"><div><h3>📍 ร้านรับซื้อใกล้คุณ</h3><p>ค้นหาร้านรับซื้อขวดพลาสติกและจุดรีไซเคิล</p></div></div>
+                    <div class="map-search"><input type="text" id="searchInput" placeholder="🔍 เช่น ร้านรับซื้อของเก่า"><button onclick="findNearby()">ค้นหา</button></div>
+                    <div id="map"></div>
+                    <div id="shopList" class="shop-list"><div class="empty-history">กดค้นหาเพื่อหาร้านรับซื้อใกล้คุณ</div></div>
                 </div>
+            </section>
 
-            </div>
-
-
-            <!-- มูลค่า -->
-
-            <div class="card">
-
-                <div class="label">
-                    💰 มูลค่ารวม
+            <section class="panel status-card" id="status-section">
+                <div class="section-header"><div><h3>🟢 สถานะระบบ</h3><p>การเชื่อมต่อของส่วนประกอบหลัก</p></div></div>
+                <div class="system-status-grid">
+                    <div class="system-status"><span>Backend API</span><b id="statusBackend">กำลังตรวจสอบ...</b></div>
+                    <div class="system-status"><span>SmartBin</span><b class="ok">พร้อมใช้งาน</b></div>
+                    <div class="system-status"><span>Dashboard</span><b class="ok">ทำงานปกติ</b></div>
+                    <div class="system-status"><span>Google Maps</span><b id="statusMaps">กำลังโหลด...</b></div>
                 </div>
-
-                <div id="totalValue" class="value">
-                    0.00
-                </div>
-
-                <div class="unit">
-                    บาท
-                </div>
-
-            </div>
-
-
-            <!-- ราคาต่อกิโล -->
-
-            <div class="card">
-
-                <div class="label">
-                    💵 ราคาขวด PET
-                </div>
-
-                <div id="petPrice" class="value">
-                    0.00
-                </div>
-
-                <div class="unit">
-                    บาท / กก.
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ==================================================
-             SELL BUTTON
-        ================================================== -->
-
-        <section class="card sell-section">
-
-            <button id="sellButton" class="sell-button" onclick="sellRecycle()" disabled>
-                💰 ขายขวด
-            </button>
-
-            <div class="sell-info">
-                กดปุ่มเมื่อคุณต้องการขายขวดที่สะสมอยู่ในถัง
-            </div>
-
-        </section>
-
-
-        <!-- ==================================================
-             HISTORY
-        ================================================== -->
-
-        <section class="card history-card">
-
-            <div class="section-header">
-
-                <div>
-
-                    <h2>
-                        📦 ประวัติการขาย
-                    </h2>
-
-                    <p>
-                        รายการขวดพลาสติกที่ขายแล้ว
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div id="history" class="history-container">
-
-                <div class="empty-history">
-
-                    ยังไม่มีประวัติการขาย
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ==================================================
-             MAP
-        ================================================== -->
-
-        <section class="card map-card">
-
-            <div class="section-header">
-
-                <div>
-
-                    <h2>
-                        📍 ค้นหาร้านรับซื้อใกล้คุณ
-                    </h2>
-
-                    <p>
-                        ค้นหาร้านรับซื้อขวดพลาสติก และจุดรีไซเคิล
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="map-search">
-
-                <input type="text" id="searchInput" placeholder="🔍 เช่น ร้านรับซื้อของเก่า">
-
-                <button onclick="findNearby()">
-                    🔍 ค้นหา
-                </button>
-
-            </div>
-
-
-            <div id="map"></div>
-
-
-            <div id="shopList" class="shop-list">
-
-                <div class="empty-history">
-
-                    กดค้นหาเพื่อหาร้านรับซื้อใกล้คุณ
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ==================================================
-             SYSTEM STATUS
-        ================================================== -->
-
-        <section class="card status-card">
-
-            <h2>
-                🟢 สถานะระบบ
-            </h2>
-
-
-            <div class="status-row">
-
-                <span>
-                    Backend
-                </span>
-
-                <span id="serverStatus" class="status-online">
-                    กำลังตรวจสอบ...
-                </span>
-
-            </div>
-
-
-            <div class="status-row">
-
-                <span>
-                    SmartBin
-                </span>
-
-                <span class="status-online">
-
-                    พร้อมใช้งาน
-
-                </span>
-
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <!-- ==================================================
-         JAVASCRIPT
-    ================================================== -->
+            </section>
+        </main>
+    </div>
 
     <script src="./script.js"></script>
-
-
-    <!-- ==================================================
-         GOOGLE MAPS
-    ================================================== -->
-
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7o7l0n0-h4lFqKO3xWNCGDxxSROFKfrY&libraries=places&loading=async&callback=initGoogleMap" async defer>
-    </script>
-
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7o7l0n0-h4lFqKO3xWNCGDxxSROFKfrY&libraries=places&loading=async&callback=initGoogleMap" async defer></script>
 </body>
-
 </html>

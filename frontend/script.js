@@ -50,6 +50,8 @@ window.initGoogleMap = function() {
         );
 
         console.log("✅ Google Maps พร้อมใช้งาน");
+        const statusMaps = document.getElementById("statusMaps");
+        if (statusMaps) { statusMaps.textContent = "พร้อมใช้งาน"; statusMaps.className = "ok"; }
 
     } catch (error) {
 
@@ -57,6 +59,8 @@ window.initGoogleMap = function() {
             "❌ Google Maps Error:",
             error
         );
+        const statusMaps = document.getElementById("statusMaps");
+        if (statusMaps) { statusMaps.textContent = "ไม่พร้อมใช้งาน"; statusMaps.className = ""; }
 
     }
 
@@ -89,6 +93,13 @@ async function loadData() {
         }
 
         const data = await response.json();
+
+        const now = new Date();
+        const timeText = now.toLocaleTimeString("th-TH", { hour12: false });
+        const lastUpdate = document.getElementById("lastUpdate");
+        const lastDetect = document.getElementById("lastDetect");
+        if (lastUpdate) lastUpdate.textContent = timeText;
+        if (lastDetect) lastDetect.textContent = timeText;
 
         console.log(
             "✅ Backend:",
@@ -175,14 +186,28 @@ async function loadData() {
         // ==================================================
 
         if (serverStatus) {
-
-            serverStatus.innerText =
-                "🟢 ออนไลน์";
-
-            serverStatus.style.color =
-                "green";
-
+            serverStatus.innerText = "ออนไลน์";
+            serverStatus.style.color = "#0d9a61";
         }
+
+        const statusBackend = document.getElementById("statusBackend");
+        if (statusBackend) {
+            statusBackend.textContent = "ออนไลน์";
+            statusBackend.className = "ok";
+        }
+
+        const sensorStatus = document.getElementById("sensorStatus");
+        if (sensorStatus) sensorStatus.textContent = "ได้รับข้อมูล";
+
+        const aiStatus = document.getElementById("aiStatus");
+        if (aiStatus) aiStatus.textContent = "เชื่อมต่อระบบ";
+
+        const sellCount = document.getElementById("sellCount");
+        const sellWeight = document.getElementById("sellWeight");
+        const sellValue = document.getElementById("sellValue");
+        if (sellCount) sellCount.textContent = Number(data.count || 0).toLocaleString("th-TH");
+        if (sellWeight) sellWeight.textContent = weightKg.toFixed(2);
+        if (sellValue) sellValue.textContent = Number(data.price || 0).toFixed(2);
 
 
         // ==================================================
@@ -487,231 +512,78 @@ async function sellRecycle() {
 // ======================================================
 
 async function loadHistory() {
-
     try {
+        const response = await fetch(`${API_URL}/history`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-        const response =
-            await fetch(
-                `${API_URL}/history`, {
-                    cache: "no-store"
-                }
-            );
+        const data = await response.json();
+        const wrapper = document.getElementById("history");
+        if (!wrapper) return;
 
+        const history = Array.isArray(data) ? data.slice().reverse() : [];
+        updateTrendCharts(history);
 
-        if (!response.ok) {
-
-            throw new Error(
-                `HTTP ${response.status}`
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        const container =
-            document.getElementById("history");
-
-
-        if (!container) {
+        if (history.length === 0) {
+            wrapper.querySelector(".history-container").innerHTML =
+                `<div class="empty-history">ยังไม่มีประวัติการขาย</div>`;
             return;
         }
 
-
-        container.innerHTML = "";
-
-
-        // ==================================================
-        // EMPTY
-        // ==================================================
-
-        if (!Array.isArray(data) ||
-            data.length === 0
-        ) {
-
-            container.innerHTML = `
-
-                <div class="empty-history">
-
-                    ยังไม่มีประวัติการขาย
-
-                </div>
-
-            `;
-
-            return;
-
-        }
-
-
-        // ==================================================
-        // DISPLAY
-        // ==================================================
-
-        data
-            .slice()
-            .reverse()
-            .forEach(
-                (item, index) => {
-
-                    const count =
-                        Number(
-                            item.count || 0
-                        );
-
-
-                    const weightKg =
-                        Number(
-                            item.weightKg !== undefined ?
-                            item.weightKg :
-                            item.weight !== undefined ?
-                            item.weight :
-                            0
-                        );
-
-
-                    const price =
-                        Number(
-                            item.price || 0
-                        );
-
-
-                    // ==================================================
-                    // TIME
-                    // ==================================================
-
-                    let time = "";
-
-
-                    if (item.time) {
-
-                        const date =
-                            new Date(
-                                item.time
-                            );
-
-
-                        if (!isNaN(
-                                date.getTime()
-                            )) {
-
-                            time =
-                                date.toLocaleString(
-                                    "th-TH"
-                                );
-
-                        }
-
-                    }
-
-
-                    // ==================================================
-                    // CARD
-                    // ==================================================
-
-                    const card =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    card.className =
-                        "history-card";
-
-
-                    card.innerHTML = `
-
-                        <div>
-
-                            <div style="
-                                font-weight:bold;
-                                margin-bottom:6px;
-                            ">
-
-                                🧾 การขายครั้งที่
-                                ${data.length - index}
-
-                            </div>
-
-
-                            <div>
-
-                                🍾 จำนวน
-                                <b>
-                                    ${count}
-                                </b>
-                                ขวด
-
-                            </div>
-
-
-                            <div>
-
-                                ⚖️ น้ำหนัก
-                                <b>
-                                    ${weightKg.toFixed(2)}
-                                </b>
-                                กก.
-
-                            </div>
-
-
-                            <div>
-
-                                ⚖️
-                                <b>
-                                    ${(weightKg * 1000).toFixed(2)}
-                                </b>
-                                กรัม
-
-                            </div>
-
-
-                            <small>
-
-                                🕒
-                                ${escapeHTML(time)}
-
-                            </small>
-
-                        </div>
-
-
-                        <div style="
-                            color:green;
-                            font-weight:bold;
-                            font-size:18px;
-                        ">
-
-                            💰
-                            ${price.toFixed(2)}
-                            บาท
-
-                        </div>
-
-                    `;
-
-
-                    container.appendChild(
-                        card
-                    );
-
-                }
-            );
-
+        const rows = history.slice(0, 10).map((item, index) => {
+            const count = Number(item.count || 0);
+            const weightKg = Number(item.weightKg !== undefined ? item.weightKg : item.weight || 0);
+            const price = Number(item.price || 0);
+            let time = "-";
+            if (item.time) {
+                const date = new Date(item.time);
+                if (!isNaN(date.getTime())) time = date.toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" });
+            }
+            return `<tr>
+                <td>${escapeHTML(time)}</td>
+                <td>${count.toLocaleString("th-TH")} ขวด</td>
+                <td>${weightKg.toFixed(2)} kg</td>
+                <td>${price.toFixed(2)} ฿</td>
+            </tr>`;
+        }).join("");
+
+        wrapper.querySelector(".history-container").innerHTML = `
+            <table class="history-table">
+                <thead><tr><th>วันที่</th><th>จำนวน</th><th>น้ำหนัก</th><th>มูลค่า</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
     } catch (error) {
-
-        console.error(
-            "❌ History Error:",
-            error
-        );
-
+        console.error("❌ History Error:", error);
     }
-
 }
 
+function updateTrendCharts(history) {
+    const charts = [
+        { id: "bottleChart", key: "count", fallback: 0 },
+        { id: "weightChart", key: "weightKg", fallback: 0 },
+        { id: "valueChart", key: "price", fallback: 0 }
+    ];
+
+    const recent = history.slice(0, 7).reverse();
+    charts.forEach(({ id, key, fallback }) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!recent.length) {
+            el.innerHTML = `<div class="chart-empty">ยังไม่มีข้อมูล</div>`;
+            return;
+        }
+        const values = recent.map(item => Number(
+            key === "weightKg"
+                ? (item.weightKg !== undefined ? item.weightKg : item.weight || fallback)
+                : (item[key] !== undefined ? item[key] : fallback)
+        ));
+        const max = Math.max(...values, 1);
+        el.innerHTML = values.map((value, i) => {
+            const height = Math.max(5, (value / max) * 100);
+            const label = recent[i].time ? new Date(recent[i].time).toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit" }) : `${i + 1}`;
+            return `<div class="bar" style="height:${height}%" title="${label}: ${value}"></div>`;
+        }).join("");
+    });
+}
 
 // ======================================================
 // ESCAPE HTML
