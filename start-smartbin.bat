@@ -1,5 +1,6 @@
 @echo off
 title SmartBin Server
+color 0A
 
 echo.
 echo ========================================
@@ -26,9 +27,12 @@ echo.
 echo Backend:
 echo http://localhost:3000
 echo.
-echo Cloudflare URL:
+echo Cloudflare:
 echo Check the Cloudflare Tunnel window
+echo.
 echo ========================================
+echo.
+echo Keep both windows open while using SmartBin.
 echo.
 
 pause
